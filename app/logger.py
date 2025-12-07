@@ -3,7 +3,7 @@ import logging
 
 
 def setup_logger():
-    logger = logging.getLogger("my_app")
+    logger = logging.getLogger("FastAPI_logger")
     logger.setLevel(logging.DEBUG)
 
     # Создаем консольный обработчик
