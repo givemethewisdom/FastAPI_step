@@ -3,10 +3,11 @@ import secrets
 import sys
 
 from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBasicCredentials, HTTPBasic
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
 
 from DataBase.Fake_DB import fake_db
+
 
 security = HTTPBasic()
 

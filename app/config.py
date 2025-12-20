@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from environs import Env
 
+
 domens = r'@(mail\.ru|gmail\.com|yandex\.ru)$'  # почта для проверки в модели Contacts
 
 
