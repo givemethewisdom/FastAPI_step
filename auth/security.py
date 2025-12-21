@@ -4,9 +4,14 @@ from datetime import UTC, datetime, timedelta, timezone
 from typing import Dict, Optional
 
 import jwt
-from fastapi import Depends, HTTPException, status,Request
+from fastapi import Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer
+from fastapi_limiter.depends import RateLimiter
+from rbacx import Subject, Action, Resource, Context
+from rbacx.adapters.fastapi import require_access
+from starlette.requests import Request
 
+from DataBase.DB import get_user
 from DataBase.Fake_DB import REFRESH_TOKEN_DB
 from app.logger import logger
 
@@ -94,9 +99,9 @@ def check_refresh_token(token: str = Depends(oauth2_scheme)):
         raise HTTPException(401, detail="Invalid token")
 
 
-def username_from_request(request: Request)->str:
+def username_from_request(request: Request) -> str:
     """Для rbacx: достаём Bearer-токен вручную и возвращаем subject.id."""
-    auth = request.headers.get("Authorization",'')
+    auth = request.headers.get("Authorization", '')
     prefix = 'bearer '
     if not auth.lower().startswith(prefix):
         return 'anonymous'
@@ -106,3 +111,60 @@ def username_from_request(request: Request)->str:
         return decode_token(token)
     except HTTPException:
         return 'anonymous'
+
+
+def require_access_with_rate_limit(guard, resource: str, page: str):
+    """проверка прав и выдача лимита запросов
+    Пока нет(и скорее всего не будет)  у одного пользователя несколько ролей
+    но ессли будут то роль выше в иерархии должна быть левее (индекс ноль)
+    тут проверяется роль на первом месте
+    """
+    logger.info('если видно это сообщение то лимиты в require_access_with_rate_limit '
+                'все еще тестовые')
+
+    async def dependency(
+            request: Request,
+            response: Response,
+            _=Depends(require_access(guard, make_env_builder(resource, page))),
+    ):
+        user = username_from_request(request)
+        user_obj = get_user(user)
+        role = getattr(user_obj, 'roles', 'common role')
+        # для дебага маленькие значения
+        if role[0] == 'admin':
+            limiter = RateLimiter(times=10, seconds=10)
+        elif role[0] == 'user':
+            limiter = RateLimiter(times=5, seconds=10)
+        elif role[0] == 'guest':
+            limiter = RateLimiter(times=2, seconds=10)
+        else:
+            limiter = RateLimiter(times=1, seconds=10)
+
+        await limiter(request,response)
+        return user
+
+    return dependency
+
+
+# 2) Фабрика сборки окружения для rbacx
+def make_env_builder(action_name: str, resource_type: str):
+    """
+    раньше вызывал в main в
+    [Depends(require_access(guard, make_env_builder(action_name='view_user', resource_type='page')))])
+    теперь буду в security в
+    require_access_with_rate_limit
+    """
+
+    def build_env(request: Request):
+        logger.info(f'env_builder start')
+        username = username_from_request(request)
+        user_obj = get_user(username)
+        roles = user_obj.roles if user_obj else []
+        subject = Subject(id=username, roles=roles)
+        action = Action(action_name)
+        resource = Resource(type=resource_type)
+        context = Context()
+        logger.info(f'env_builder end')
+        return subject, action, resource, context
+
+    return build_env

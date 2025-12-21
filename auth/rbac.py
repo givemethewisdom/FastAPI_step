@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from functools import wraps
 
 """
@@ -30,3 +30,5 @@ class PermissionChecker:
                 )
             return await func(*args, **kwargs)
         return wrapper
+
+

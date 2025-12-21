@@ -15,6 +15,14 @@ USERS_DATA = [
         "disabled": False
     },
     {
+        "username": "da",
+        "password": "da",  # В продакшене пароли должны быть хешированы!
+        "roles": ["admin"],
+        "full_name": "Admin User",
+        "email": "admin@example.com",
+        "disabled": False
+    },
+    {
         "username": "user",
         "password": "userpass",
         "roles": ["user"],
