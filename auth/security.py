@@ -11,8 +11,6 @@ from rbacx import Subject, Action, Resource, Context
 from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request
 
-from DataBase.DB import get_user
-from DataBase.Fake_DB import REFRESH_TOKEN_DB
 from app.logger import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")

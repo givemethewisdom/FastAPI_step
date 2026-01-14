@@ -1,32 +1,27 @@
-import re
-from typing import Optional, List
+from typing import Optional
 
-from fastapi import FastAPI, HTTPException
-from passlib.context import CryptContext
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
-from app.config import domens
+# Базовый класс для моделей пользователя
+class UserBase(BaseModel):
+    username: str
+    info : str | None = Field(None, min_length=1, max_length=15)
 
+# Модель для создания пользователя (входные данные)
+class UserCreate(UserBase):
+    """
+    Модель для получения данных от клиента.
+    В реальных проектах может содержать дополнительные поля,
+    например, пароль, которые не возвращаются в ответе.
+    """
+    password: str = Field(min_length=1, max_length=128)
 
-class UserOnlyName(BaseModel):
-    username: str = Field(..., min_length=1, max_length=15)
-
-
-class User(UserOnlyName):
-    password: str = Field(..., min_length=1, max_length=10)
-
-
-class UserBaseFields(UserOnlyName):
-    '''просто модель юзера с базовыми полями'''
-    full_name: str = Field(..., min_length=1, max_length=15)
-    email: str = Field(..., min_length=10, max_length=20)
-    disabled: bool = Field(default=False, description="idk")
-    roles: List[str] = Field(..., description="list of user roles")
-
-
-class UserLogin(BaseModel):
-    """модель для входа в систему"""
-    username: str = Field(..., min_length=1, max_length=10)
-    password: str = Field(..., min_length=0, max_length=10)
+# Модель для возврата данных пользователя (выходные данные)
+class UserReturn(UserBase):
+    """
+    Модель для сериализации данных пользователя.
+    Включает технические поля из БД (id) и исключает чувствительные данные.
+    """
+    id: int  # ID всегда присфутствует после сохранения в БД
 

@@ -1,11 +1,7 @@
-SOME_RESOURSE = {
-    "user1": {
-        "username": "user1",
-        "password": "<PASSWORD>",
-        "roles": ["user"]
-    }
-}
+a = False
+b = None
 
-print(SOME_RESOURSE)
-del SOME_RESOURSE["user1"]
-print(SOME_RESOURSE)
+if  a == False:
+    print("a is false")
+if b == False:
+    print("b is false")

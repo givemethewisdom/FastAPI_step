@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 
-from DataBase.DB import get_user
+
 from app.models.models import UserBaseFields
 from auth.security import get_user_from_token
 
