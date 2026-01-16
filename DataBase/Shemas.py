@@ -2,7 +2,7 @@
 Only DAtabase MODELS
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Interval
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Interval, Boolean
 from sqlalchemy.orm import relationship
 
 from DataBase.Database import Base
@@ -15,7 +15,7 @@ class UserDB(Base):
     __tablename__ = "users"  # таблица users
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(50), nullable=False, unique=False)
+    username = Column(String(45), nullable=False, unique=False)
     password = Column(String(255), nullable=False)
     info = Column(String(50), nullable=True)
 
@@ -47,6 +47,7 @@ class TodooDB(Base):
     )
 
     user = relationship("UserDB", back_populates="todoo")
+    token = relationship("TokenDB", back_populates="user", cascade="all, delete-orphan", uselist=False)
 
 
 class TodooFinishedDB(Base):
@@ -83,3 +84,17 @@ class TodooFinishedDB(Base):
     user = relationship("UserDB", back_populates="todoo_finished")
 
 
+class TokenDB(Base):
+    __tablename__ = "tokens"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
+                     unique=True)  # Один токен на пользователя
+    access_token = Column(String(500), nullable=False)  # JWT токен ~400 символов
+    refresh_token = Column(String(500), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)  # Когда токен истекает
+    is_active = Column(Boolean, default=True)  # Для инвалидации
+
+    # Связь
+    user = relationship("UserDB", back_populates="token", uselist=False)  # One-to-one
