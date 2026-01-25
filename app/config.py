@@ -1,11 +1,7 @@
-# config.py
 from dataclasses import dataclass
-
 from environs import Env
 
-from .logger import logger
-
-domens = r'@(mail\.ru|gmail\.com|yandex\.ru)$'  # почта для проверки в модели Contacts
+from app.logger import logger
 
 
 @dataclass
@@ -20,13 +16,27 @@ class Config:
     debug: bool
 
 
-def load_config(path: str = None) -> Config:
-    env = Env()
-    logger.info(f'Loading config from')
-    env.read_env(path)  # Загружаем переменные окружения из файла .env
+# Создаем глобальный экземпляр конфига
+_config: Config = None
 
-    return Config(
-        db=DatabaseConfig(database_url=env("DATABASE_URL")),
-        secret_key=env("SECRET_KEY"),
-        debug=env.bool("DEBUG", default=False)
-    )
+
+def load_config(path: str = None) -> Config:
+    global _config
+    if _config is None:
+        env = Env()
+        logger.info('Loading config from environment')
+        env.read_env(path)
+
+        _config = Config(
+            db=DatabaseConfig(database_url=env("DATABASE_URL")),
+            secret_key=env("SECRET_KEY"),
+            debug=env.bool("DEBUG", default=False)
+        )
+    return _config
+
+
+# Функция для получения конфига
+def get_config() -> Config:
+    if _config is None:
+        raise RuntimeError("Config not loaded. Call load_config() first.")
+    return _config

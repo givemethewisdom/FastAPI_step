@@ -35,5 +35,7 @@ class TodooResponse(TodooUserId):
     created_at : datetime = Field(
         ...,
         description="вермя в формате ISO 8604(вроде бы XD)",
-        example="2026-01-10T05:42:33.734734Z"
+        json_schema_extra={
+            'example':"2026-01-10T05:42:33.734734Z"
+        }
     )

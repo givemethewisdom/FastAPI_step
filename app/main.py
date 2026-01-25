@@ -2,14 +2,21 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import uvicorn
 from databases import Database
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 
 from DataBase.Database import Base, engine
-from .config import load_config
-# Импорт роутеров
-from .routing import user, todoo
+from app import load_config
+
+from app.exceptions import CustomException, CommonException
+
+from app.routing import user, todoo
+
+from app.exception_handlers import custom_exception_handler, global_exception_handler, validation_exception_handler, \
+    common_exception_handler
 
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
@@ -17,10 +24,7 @@ POSTGRES_URL = os.getenv("POSTGRES_URL")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-config = load_config()
-
 database = Database(POSTGRES_URL)
-
 
 
 @asynccontextmanager
@@ -42,12 +46,25 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if config.debug:
-    app.debug = True
-else:
-    app.debug = False
+app.add_exception_handler(CustomException, custom_exception_handler)
+app.add_exception_handler(Exception, global_exception_handler)  # все еще работает не так как я предпологаю
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(CommonException, common_exception_handler)
 
 # Импорт роутеров
-
 app.include_router(user.router)
 app.include_router(todoo.router)
+
+
+@app.get("/sum/")
+def calculate_sum(a: int, b: int):
+    return {"result": a + b}
+
+
+# я этим не пользуюсь
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8000
+    )

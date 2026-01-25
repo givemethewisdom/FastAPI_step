@@ -1,0 +1,3 @@
+SECRET_KEY=
+POSTGRES_URL=postgresql+asyncpg://#и для DB и для алембик подойдет асинхронный
+DEBUG=True

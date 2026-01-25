@@ -24,6 +24,7 @@ class UserDB(Base):
 
     # Связь с todoofinished (завершенные задачи)
     todoo_finished = relationship("TodooFinishedDB", back_populates="user", cascade="all, delete")
+    token = relationship("TokenDB", back_populates="user", cascade="all, delete-orphan", uselist=False)
 
 
 class TodooDB(Base):
@@ -47,7 +48,6 @@ class TodooDB(Base):
     )
 
     user = relationship("UserDB", back_populates="todoo")
-    token = relationship("TokenDB", back_populates="user", cascade="all, delete-orphan", uselist=False)
 
 
 class TodooFinishedDB(Base):

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from isort import settings
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,9 +10,15 @@ from starlette import status
 
 from DataBase.Database import get_async_session
 from DataBase.Shemas import TodooDB, UserDB, TodooFinishedDB
+from app import config
+from app.config import get_config
+from app.exception_handlers import custom_exception_handler
+from app.exceptions import CustomException, CommonException, ErrorCode
 from app.logger import logger
 from app.models.models_todoo import Todoo, TodooUserId, TodooResponse
 from app.models.models_todoo_finished import Todoofinished
+
+# config = get_config()
 
 router = APIRouter(
     prefix="/todoo",
@@ -72,13 +79,18 @@ async def get_all_todoo(
         created_after: Optional[datetime] = Query(
             None,
             description="Созданные ПОСЛЕ",
-            example='2026-01-01T00:00:00'
+            #Pydantic V2.0
+            json_schema_extra={
+                'example':'2026-01-01T00:00:00'
+            }
 
         ),
         created_before: Optional[datetime] = Query(
             None,
             description="Созданные ДО)",
-            example='2026-01-01T00:00:00'
+            json_schema_extra={
+                'example':'2026-01-01T00:00:00'
+            }
         ),
 
         session: AsyncSession = Depends(get_async_session)
@@ -120,42 +132,6 @@ async def get_all_todoo(
         )
 
 
-@router.get("/get_todoo", response_model=TodooResponse)
-async def get_todoo(
-        todoo_id: int,
-        session: AsyncSession = Depends(get_async_session)
-):
-    """
-    Получение информации о задаче по  ID.
-
-    Параметры:
-    - todoo_id: идентификатор задачи в БД
-
-    Возвращает:
-    - Данные задаче в формате TodooResponse
-    - 404 ошибку если задача не найдена
-    """
-    try:
-        todoo = await session.get(TodooDB, todoo_id)
-
-        if not todoo:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Задача нe найдена'
-            )
-
-        return todoo
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'ошибка получения задачи {str(e)}'
-        )
-
-
 @router.put('/{todoo_id}', response_model=TodooResponse)
 async def update_todoo(
         todoo_id: int,
@@ -179,8 +155,7 @@ async def update_todoo(
 {
   "title": "string",
   "description": "string",
-  "completed": true,
-  "user_id": 59
+  "user_id": 1
 }
     """
     try:
@@ -207,8 +182,10 @@ async def update_todoo(
         new_todoo_data = result.scalar_one_or_none()
 
         if not new_todoo_data:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail="todoo not found")
+            raise CommonException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message='Invalid Input'
+            )
 
         await session.commit()
         return new_todoo_data
@@ -364,7 +341,7 @@ async def get_all_todoo(
         )
 
 
-@router.get("/analitics", response_model=dict)
+@router.get("/analytics", response_model=dict)
 async def get_analitics(session: AsyncSession = Depends(get_async_session)):
     """
     Метод для получения аналитики по задачам
@@ -391,8 +368,8 @@ async def get_analitics(session: AsyncSession = Depends(get_async_session)):
             'all_tasks': all_tasks,
             'completed': completed_count,
             'in_progress': active_count,
-            'total_time_on_complete': total_time,#отдаю в секундах (фронт пересчитает как хочет)
-            'total_time_hours': total_time / 3600,#в часах даже лишнее(наверное)
+            'total_time_on_complete': total_time,  # отдаю в секундах (фронт пересчитает как хочет)
+            'total_time_hours': total_time / 3600,  # в часах даже лишнее(наверное)
             'avg_time_on_complete': avg_time,
             'avg_time_on_complete_hours': avg_time / 3600 if avg_time > 0 else 0,
             'completion_rate': f"{(completed_count / all_tasks * 100):.1f}%" if all_tasks > 0 else "0%"
@@ -402,3 +379,58 @@ async def get_analitics(session: AsyncSession = Depends(get_async_session)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/{todoo_id}", response_model=TodooResponse)
+async def get_todoo(
+        todoo_id: int,
+        session: AsyncSession = Depends(get_async_session),
+):
+    logger.info('------------------------------------------------------------------------в')
+    """
+    Получение информации о задаче по  ID.
+
+    Параметры:
+    - todoo_id: идентификатор задачи в БД
+
+    Возвращает:
+    - Данные задаче в формате TodooResponse
+    - 404 ошибку если задача не найдена
+    """
+    try:
+        todoo = await session.get(TodooDB, todoo_id)
+        if not todoo:
+            if config.debug:
+                raise CustomException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail='Costum exception todoo not found',
+                    message='u r atemp to (pohyi)'
+                )
+            else:
+                raise CustomException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail='Costum exception todoo not found',
+                    message='awdawdawd'
+                )
+
+        return todoo
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error('Error getting todo ?', todoo_id)
+
+        if config.debug:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'ошибка получения задачи {str(e)}'
+            )
+        else:
+            raise CustomException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'CustomException code 500 for router get /todoo_id',
+                message='Упс.. кто-то что-то где-то сломал'
+            )
+
+
+@router.get("/awdawd/dawdaw")
+async def adwad():
+    raise Exception
