@@ -1,12 +1,14 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 # Базовый класс для моделей пользователя
 class UserBase(BaseModel):
     username: str
-    info : str | None = Field(None, min_length=1, max_length=15)
+    info: str | None = Field(None, max_length=30)
+    model_config = ConfigDict(from_attributes=True)
+
 
 # Модель для создания пользователя (входные данные)
 class UserCreate(UserBase):
@@ -17,6 +19,7 @@ class UserCreate(UserBase):
     """
     password: str = Field(min_length=1, max_length=128)
 
+
 # Модель для возврата данных пользователя (выходные данные)
 class UserReturn(UserBase):
     """
@@ -24,4 +27,3 @@ class UserReturn(UserBase):
     Включает технические поля из БД (id) и исключает чувствительные данные.
     """
     id: int  # ID всегда присфутствует после сохранения в БД
-

@@ -20,7 +20,8 @@ async def custom_exception_handler(request: Request, exc: CustomException):
 
 async def global_exception_handler(request: Request, exc: Exception):
     print('global_exception_handler')
-    "глобальный обработчик ошибок"
+    "глобальный обработчик ошибок "
+    "он ловит все неучтенные ошибки но я не понимаю как))"
     return JSONResponse(
         status_code=500,
         content={"error": "Internal server error (from global_exception_handler)"},
