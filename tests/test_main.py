@@ -19,7 +19,7 @@ class TestCreateUser:
             response = await client.post("/users/create", json=user_data)
 
             if response.status_code != 200:
-                # Попробуйте получить текст ошибки
+                # Пробую получить текст ошибки
                 try:
                     error_data = response.json()
                 except Exception as e:
