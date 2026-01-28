@@ -1,6 +1,8 @@
 # tests/test_users.py
 import pytest
+from httpx import AsyncClient, ASGITransport
 
+from app.main import app
 
 
 class TestCreateUser:
@@ -35,6 +37,7 @@ class TestCreateUser:
 
         except Exception as e:
             pytest.fail(f'{e}')
+
     @pytest.mark.asyncio
     async def test_create_user_missing_fields(self, client):
         """Создание пользователя без обязательных полей"""
@@ -105,3 +108,13 @@ class TestCreateUser:
 
         except Exception as e:
             pytest.fail(f'{e}')
+
+
+class TestGetUser:
+    #в новой либе (transport=ASGITransport(app=app)
+    #https://fastapi.tiangolo.com/advanced/async-tests/#in-detail
+    async def test_get_users(self):
+        async with AsyncClient(transport=ASGITransport(app=app),
+                               base_url="http://test") as ac:
+            response = await ac.get("/users/get_all")
+        assert response.status_code == 200
