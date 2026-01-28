@@ -2,7 +2,8 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 
-
+#новая либа теперь с transport = ASGITransport(app=app)
+# https://fastapi.tiangolo.com/advanced/async-tests/#in-detail
 async def test_get_users():
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url="http://test") as ac:
