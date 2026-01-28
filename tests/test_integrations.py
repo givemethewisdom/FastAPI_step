@@ -8,8 +8,8 @@ from app.main import app
 class TestCreateUser:
     """Тесты для создания пользователя"""
 
-    @pytest.mark.asyncio
-    async def test_create_user_success(self, client):
+
+    async def test_create_user_success(self, client):#client form conftest
         """Успешное создание пользователя"""
         try:
             user_data = {
@@ -38,7 +38,7 @@ class TestCreateUser:
         except Exception as e:
             pytest.fail(f'{e}')
 
-    @pytest.mark.asyncio
+
     async def test_create_user_missing_fields(self, client):
         """Создание пользователя без обязательных полей"""
         try:
@@ -59,7 +59,7 @@ class TestCreateUser:
         except Exception as e:
             pytest.fail(f'{e}')
 
-    @pytest.mark.asyncio
+
     async def test_create_user_empty_fields(self, client):
         """Создание пользователя с пустыми полями"""
         try:
@@ -73,7 +73,7 @@ class TestCreateUser:
         except Exception as e:
             pytest.fail(f'{e}')
 
-    @pytest.mark.asyncio
+
     async def test_create_user_password_length(self, client):
         """Проверка минимальной длины пароля"""
         try:
@@ -90,7 +90,7 @@ class TestCreateUser:
         except Exception as e:
             pytest.fail(f'{e}')
 
-    @pytest.mark.asyncio
+
     async def test_create_user_sql_injection_attempt(self, client):
         """Попытка SQL-инъекции в полях"""
         try:
@@ -113,8 +113,24 @@ class TestCreateUser:
 class TestGetUser:
     #в новой либе (transport=ASGITransport(app=app)
     #https://fastapi.tiangolo.com/advanced/async-tests/#in-detail
+    #вообще есть настроенный client для async а это для разнообразия
     async def test_get_users(self):
         async with AsyncClient(transport=ASGITransport(app=app),
                                base_url="http://test") as ac:
             response = await ac.get("/users/get_all")
         assert response.status_code == 200
+
+
+    async def test_get_user_by_id(self, client):
+        create_resp = await client.post("/users/create", json={
+            "username": "john",
+            "password": "pass",
+            "info": "info"
+        })
+
+        user_id = create_resp.json()["id"]
+
+        get_resp = await client.get(f"/users/{user_id}")
+
+        assert get_resp.status_code == 200
+        assert get_resp.json()["id"] == user_id
