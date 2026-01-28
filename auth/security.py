@@ -144,7 +144,7 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
     return dependency
 
 
-# 2) Фабрика сборки окружения для rbacx
+# Фабрика сборки окружения для rbacx
 def make_env_builder(action_name: str, resource_type: str):
     """
     раньше вызывал в main в
