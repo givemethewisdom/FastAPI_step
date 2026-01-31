@@ -15,7 +15,7 @@ class UserDB(Base):
     __tablename__ = "users"  # таблица users
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(45), nullable=False, unique=False)
+    username = Column(String(45), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
     info = Column(String(50), nullable=True)
 

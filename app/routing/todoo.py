@@ -384,7 +384,6 @@ async def get_todoo(
         todoo_id: int,
         session: AsyncSession = Depends(get_async_session),
 ):
-    logger.info('------------------------------------------------------------------------в')
     """
     Получение информации о задаче по  ID.
 
@@ -430,7 +429,3 @@ async def get_todoo(
                 message='Упс.. кто-то что-то где-то сломал'
             )
 
-
-@router.get("/awdawd/dawdaw")
-async def adwad():
-    raise Exception

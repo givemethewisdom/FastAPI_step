@@ -11,7 +11,6 @@ from app.models.exception_models import CustomExceptionModel, CommonExceptionMod
 
 
 async def custom_exception_handler(request: Request, exc: CustomException):
-    print('custom_exception_handler')
     "обработчик ошибок пока только в get todoo by id"
     error = jsonable_encoder(
         CustomExceptionModel(status_code=exc.status_code, er_message=exc.message, er_details=exc.detail))
@@ -19,7 +18,6 @@ async def custom_exception_handler(request: Request, exc: CustomException):
 
 
 async def global_exception_handler(request: Request, exc: Exception):
-    print('global_exception_handler')
     "глобальный обработчик ошибок "
     "он ловит все неучтенные ошибки но я не понимаю как))"
     return JSONResponse(

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from typing import List
 
 from fastapi import Depends, HTTPException, APIRouter
@@ -9,20 +10,24 @@ from starlette import status
 
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
+from app.exceptions import CustomException
 from app.logger import logger
-from app.models.models import UserReturn, UserCreate, UserBase
-
+from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
+from app.services.hash_password import PasswordService
+from auth.security import create_access_token, create_refresh_token
 
 router = APIRouter(
     prefix="/users",
     tags=["users"]
 )
 
-@router.post("/create", response_model=UserReturn)
+
+@router.post("/create", response_model=UserTokenResponse)
 async def create_user(
         user: UserCreate,
         session: AsyncSession = Depends(get_async_session)
 ):
+    logger.info(f"Creating user: {user.username}")
     """
     Создание нового пользователя в базе данных.
 
@@ -37,21 +42,37 @@ async def create_user(
     }
     """
 
+    # возможна гонка но глобальный Exceptiom hendler даст 500 из-за
+    # username = Column(String(45), nullable=False, unique=True
+    stmt = select(UserDB).where(UserDB.username == user.username)
+    user_lrdy_exist = await session.scalar(stmt)
+    if user_lrdy_exist:
+        raise CustomException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Costum exception user lrdy exist',
+            message='some message caz i can'
+        )
+
     try:
         # Создаем объект БД
-        db_user = UserDB(
-            username=user.username,
-            password=user.password,
-            info=user.info
-        )
+        user_dict = user.model_dump()
+        db_user = UserDB(**user_dict)
 
         # Добавляем и сохраняем
         session.add(db_user)
         await session.commit()
         await session.refresh(db_user)  # запрашиваем  ID из DB т.к. при commit id еще не сушществует
 
-        # Возвращаем (FastAPI автоматически конвертирует через response_model)
-        return db_user
+        access_token = create_access_token({user.username: user.username})
+        refresh_token = create_refresh_token({user.username: user.username})
+
+        return UserTokenResponse(
+            id=db_user.id,
+            username=db_user.username,
+            info=db_user.info,
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
 
     except HTTPException:
         raise
@@ -98,6 +119,7 @@ async def get_all_users(
             detail=f'ошибка получения информации о пользователях {str(e)}'
         )
 
+
 @router.get("/{user_id}", response_model=UserReturn)
 async def get_user(
         user_id: int,
@@ -130,6 +152,7 @@ async def get_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'ошибка получения информации о пользователе {str(e)}'
         )
+
 
 # Роут для полного обновления информации о пользователе по ID
 @router.put('/{user_id}', response_model=UserReturn)
@@ -189,7 +212,6 @@ async def update_user(
         )
 
 
-
 # Роут для удаления пользователя по ID
 @router.delete("/{user_id}", response_model=dict)
 async def delete_user(
@@ -213,7 +235,7 @@ async def delete_user(
 
         result = await session.execute(stmt)
 
-        if not result.rowcount :
+        if not result.rowcount:
             raise HTTPException(
                 status_code=404,
                 detail="Пользователь с указанным ID не найден"
