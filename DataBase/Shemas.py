@@ -90,7 +90,6 @@ class TokenDB(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False,
                      unique=True)  # Один токен на пользователя
-    access_token = Column(String(500), nullable=False)  # JWT токен ~400 символов
     refresh_token = Column(String(500), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=False)  # Когда токен истекает

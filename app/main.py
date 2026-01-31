@@ -56,10 +56,6 @@ app.include_router(user.router)
 app.include_router(todoo.router)
 
 
-@app.get("/sum/")
-def calculate_sum(a: int, b: int):
-    return {"result": a + b}
-
 
 # я этим не пользуюсь
 if __name__ == "__main__":

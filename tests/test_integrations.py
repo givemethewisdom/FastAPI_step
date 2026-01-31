@@ -3,13 +3,13 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app
+from app.models.models import UserReturn
 
 
 class TestCreateUser:
     """Тесты для создания пользователя"""
 
-
-    async def test_create_user_success(self, client):#client form conftest
+    async def test_create_user_success(self, client):  # client form conftest
         """Успешное создание пользователя"""
         try:
             user_data = {
@@ -38,7 +38,6 @@ class TestCreateUser:
         except Exception as e:
             pytest.fail(f'{e}')
 
-
     async def test_create_user_missing_fields(self, client):
         """Создание пользователя без обязательных полей"""
         try:
@@ -59,7 +58,6 @@ class TestCreateUser:
         except Exception as e:
             pytest.fail(f'{e}')
 
-
     async def test_create_user_empty_fields(self, client):
         """Создание пользователя с пустыми полями"""
         try:
@@ -72,7 +70,6 @@ class TestCreateUser:
 
         except Exception as e:
             pytest.fail(f'{e}')
-
 
     async def test_create_user_password_length(self, client):
         """Проверка минимальной длины пароля"""
@@ -89,7 +86,6 @@ class TestCreateUser:
 
         except Exception as e:
             pytest.fail(f'{e}')
-
 
     async def test_create_user_sql_injection_attempt(self, client):
         """Попытка SQL-инъекции в полях"""
@@ -111,15 +107,45 @@ class TestCreateUser:
 
 
 class TestGetUser:
-    #в новой либе (transport=ASGITransport(app=app)
-    #https://fastapi.tiangolo.com/advanced/async-tests/#in-detail
-    #вообще есть настроенный client для async а это для разнообразия
-    async def test_get_users(self):
-        async with AsyncClient(transport=ASGITransport(app=app),
-                               base_url="http://test") as ac:
-            response = await ac.get("/users/get_all")
-        assert response.status_code == 200
 
+    async def test_get_users_zero_users(self, client):
+        get_response = await client.get("/users/get_all")
+        assert get_response.status_code == 200
+
+        data = get_response.json()
+        assert isinstance(data, list)
+
+    async def test_get_users(self, client):
+        # create user lrdy tested before
+
+        user_data = [
+            {"username": "testuser", "info": "some info", "password": "securepassword123"},
+            {"username": "test new user", "info": "more some info", "password": "damskiyugodnik217"}
+        ]
+        id_list = []
+        for user in user_data:
+            response = await client.post("/users/create", json=user)
+            assert response.status_code == 200
+            id_list.append(response.json()['id'])
+
+        get_response = await client.get("/users/get_all")
+        data = get_response.json()
+        assert isinstance(data, list)
+        assert len(data) == len(user_data)
+
+        for i, user in enumerate(data):
+            try:
+                UserReturn(**user)
+
+                assert user['id'] in id_list
+                expected_user = user_data[i]
+                assert expected_user['username'] == user['username']
+                assert expected_user['info'] == user['info']
+                # рекомендуется проверять пароль но user валидируется под модель без пароля
+                # и я не знаю зачем это делать
+                assert 'password' not in user
+            except Exception as e:
+                pytest.fail(f'user have no valid structure: {e}')
 
     async def test_get_user_by_id(self, client):
         create_resp = await client.post("/users/create", json={

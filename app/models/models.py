@@ -14,8 +14,6 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """
     Модель для получения данных от клиента.
-    В реальных проектах может содержать дополнительные поля,
-    например, пароль, которые не возвращаются в ответе.
     """
     password: str = Field(min_length=1, max_length=128)
 
