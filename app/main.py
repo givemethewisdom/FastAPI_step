@@ -5,18 +5,18 @@ from pathlib import Path
 import uvicorn
 from databases import Database
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from rbacx import Guard, HotReloader
+from rbacx.store import FilePolicySource
 
 from DataBase.Database import Base, engine
-from app import load_config
-
-from app.exceptions import CustomException, CommonException
-
-from app.routing import user, todoo
-
+from app import logger
 from app.exception_handlers import custom_exception_handler, global_exception_handler, validation_exception_handler, \
     common_exception_handler
+from app.exceptions import CustomException, CommonException
+from app.routing import user, todoo
+from auth.guard import guard
 
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
@@ -25,6 +25,7 @@ POSTGRES_URL = os.getenv("POSTGRES_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 database = Database(POSTGRES_URL)
+
 
 
 @asynccontextmanager
@@ -54,8 +55,6 @@ app.add_exception_handler(CommonException, common_exception_handler)
 # Импорт роутеров
 app.include_router(user.router)
 app.include_router(todoo.router)
-
-
 
 # я этим не пользуюсь
 if __name__ == "__main__":

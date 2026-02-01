@@ -1,46 +1,58 @@
 
 import os
-from datetime import UTC, datetime, timedelta, timezone
-from typing import Dict, Optional
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Dict
 
 import jwt
-from fastapi import Depends, HTTPException, status, Request, Response
+from fastapi import Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordBearer
 from fastapi_limiter.depends import RateLimiter
 from rbacx import Subject, Action, Resource, Context
 from rbacx.adapters.fastapi import require_access
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.testing.pickleable import User
 from starlette.requests import Request
 
+from DataBase.Database import get_async_session
+from DataBase.repository import get_user
+
+from DataBase.sync_engine import get_user_sync
 from app.logger import logger
 
+# OAuth2PasswordBearer извлекает токен из заголовка "Authorization: Bearer <token>"
+# Параметр tokenUrl указывает маршрут, по которому клиенты смогут получить токен
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_MINUTES = 10_080
 
 
 def create_access_token(data: Dict) -> str:
     to_encode = data.copy()
+
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     to_encode.update({"type": 'access'})
+
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(data: Dict) -> str:
     to_encode = data.copy()
+
     expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     to_encode.update({"type": 'refresh'})
+    to_encode.update({"jti": str(uuid.uuid4())})
+
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_user_from_token(token: str = Depends(oauth2_scheme), required_type: Optional[str] = None) -> str:
+def get_user_from_token(token: str = Depends(oauth2_scheme)) -> str:
     """DI-обёртка под FastAPI (используем в dependencies.py)."""
-    if required_type:
-        return decode_token_with_type(token, required_type)
     return decode_token(token)
 
 
@@ -104,7 +116,6 @@ def username_from_request(request: Request) -> str:
     if not auth.lower().startswith(prefix):
         return 'anonymous'
     token = auth[len(prefix):].strip()
-
     try:
         return decode_token(token)
     except HTTPException:
@@ -144,25 +155,35 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
     return dependency
 
 
-# Фабрика сборки окружения для rbacx
 def make_env_builder(action_name: str, resource_type: str):
     """
-    раньше вызывал в main в
-    [Depends(require_access(guard, make_env_builder(action_name='view_user', resource_type='page')))])
-    теперь буду в security в
-    require_access_with_rate_limit
+    Синхронная версия с синхронной БД.
     """
 
     def build_env(request: Request):
-        logger.info(f'env_builder start')
         username = username_from_request(request)
-        user_obj = get_user(username)
-        roles = user_obj.roles if user_obj else []
+
+        # Используем синхронную функцию
+        user_obj = get_user_sync(username)
+        roles = user_obj.roles if user_obj else ["guest"]
+
         subject = Subject(id=username, roles=roles)
         action = Action(action_name)
         resource = Resource(type=resource_type)
         context = Context()
-        logger.info(f'env_builder end')
         return subject, action, resource, context
 
     return build_env
+
+
+async def get_current_user(
+    current_username: str = Depends(get_user_from_token),
+    db: AsyncSession = Depends(get_async_session)  # Добавьте эту зависимость
+) -> User:
+    user = await get_user(current_username, db)  # Теперь передаем db
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user

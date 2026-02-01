@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import List
 
 from fastapi import Depends, HTTPException, APIRouter
+from rbacx.adapters.fastapi import require_access
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.pickleable import User
@@ -12,9 +13,12 @@ from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
 from app.exceptions import CustomException
 from app.logger import logger
+
 from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
 from app.services.hash_password import PasswordService
-from auth.security import create_access_token, create_refresh_token
+from auth.guard import guard
+from auth.security import create_access_token, create_refresh_token, get_user_from_token, make_env_builder, \
+    get_current_user
 
 router = APIRouter(
     prefix="/users",
@@ -22,12 +26,17 @@ router = APIRouter(
 )
 
 
+@router.get("/admin", dependencies=[
+    Depends(require_access(guard, make_env_builder("admin_only", "page")))
+])
+async def admin_info(current_user: User = Depends(get_current_user)):
+    return {"message": f"Hello, {current_user.username}! Welcome to the admin page."}
+
 @router.post("/create", response_model=UserTokenResponse)
 async def create_user(
         user: UserCreate,
         session: AsyncSession = Depends(get_async_session)
 ):
-    logger.info(f"Creating user: {user.username}")
     """
     Создание нового пользователя в базе данных.
 
@@ -57,14 +66,16 @@ async def create_user(
         # Создаем объект БД
         user_dict = user.model_dump()
         db_user = UserDB(**user_dict)
+        #все получают роль user
+        db_user.roles = 'user'
 
         # Добавляем и сохраняем
         session.add(db_user)
         await session.commit()
         await session.refresh(db_user)  # запрашиваем  ID из DB т.к. при commit id еще не сушществует
 
-        access_token = create_access_token({user.username: user.username})
-        refresh_token = create_refresh_token({user.username: user.username})
+        access_token = create_access_token({'sub': db_user.username})
+        refresh_token = create_refresh_token({'sub': db_user.username})
 
         return UserTokenResponse(
             id=db_user.id,
@@ -118,6 +129,21 @@ async def get_all_users(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'ошибка получения информации о пользователях {str(e)}'
         )
+
+
+@router.get("/me")
+async def get_current_user_info(
+        username: str = Depends(get_user_from_token)
+):
+    """
+    Получить информацию о текущем пользователе.
+    Требует access токен в заголовке Authorization.
+    """
+    # username уже извлечен из токена
+    return {
+        "message": {username}
+    }
+# 4) Маршрут для админов — проверяем доступ через rbacx
 
 
 @router.get("/{user_id}", response_model=UserReturn)

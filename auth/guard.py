@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 guard = Guard(policy={})
+reloader = HotReloader(
+    guard,
+    FilePolicySource("policy.json"),
+    initial_load=True,  # сразу загрузить при старте
+)
 
 def init_guard():
     """Инициализирует guard с загрузкой политик из файла"""
@@ -31,3 +36,4 @@ def init_guard():
 def get_guard():
     """Получить глобальный экземпляр guard"""
     return guard
+init_guard()

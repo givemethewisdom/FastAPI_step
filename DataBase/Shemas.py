@@ -2,7 +2,7 @@
 Only DAtabase MODELS
 """
 
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Interval, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Interval, Boolean, Table
 from sqlalchemy.orm import relationship
 
 from DataBase.Database import Base
@@ -18,6 +18,7 @@ class UserDB(Base):
     username = Column(String(45), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
     info = Column(String(50), nullable=True)
+    roles = Column(String(50), nullable=True,server_default='user')
 
     # Связь с todoo (активные задачи)
     todoo = relationship("TodooDB", back_populates="user", cascade="all, delete")

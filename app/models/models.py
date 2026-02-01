@@ -35,8 +35,11 @@ class UserReturn(UserBase):
     Включает технические поля из БД (id) и исключает чувствительные данные.
     """
     id: int  # ID всегда присфутствует после сохранения в БД
+    roles: None | str = None #пока может быть None для отладки но надо поменять
 
 
 class UserTokenResponse(UserReturn):
     access_token: str
     refresh_token: str
+
+

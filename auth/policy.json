@@ -17,30 +17,6 @@
       "condition": { "hasAny": [ { "attr": "subject.roles" }, ["user"] ] }
     },
     {
-      "id": "user_can_add_user_info",
-
-      "effect": "permit",
-      "actions": ["add_user"],
-      "resource": { "type": "page" },
-      "condition": { "hasAny": [ { "attr": "subject.roles" }, ["user"] ] }
-    },
-    {
-      "id": "user_can_see_all_info",
-
-      "effect": "permit",
-      "actions": ["look_res"],
-      "resource": { "type": "page" },
-      "condition": { "hasAny": [ { "attr": "subject.roles" }, ["user"] ] }
-    },
-    {
-      "id": "guest_can_view_only_about_page",
-
-      "effect": "permit",
-      "actions": ["view_guest"],
-      "resource": { "type": "page" },
-      "condition": { "hasAny": [ { "attr": "subject.roles" }, ["guest"] ] }
-    },
-    {
       "id": "guest_can_see_all_info",
 
       "effect": "permit",
