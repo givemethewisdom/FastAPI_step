@@ -10,12 +10,8 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi_limiter.depends import RateLimiter
 from rbacx import Subject, Action, Resource, Context
 from rbacx.adapters.fastapi import require_access
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.testing.pickleable import User
 from starlette.requests import Request
 
-from DataBase.Database import get_async_session
-from DataBase.repository import get_user
 
 from DataBase.sync_engine import get_user_sync
 from app.logger import logger
@@ -136,6 +132,8 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
             response: Response,
             _=Depends(require_access(guard, make_env_builder(resource, page))),
     ):
+        from DataBase.repository import get_user
+
         user = username_from_request(request)
         user_obj = get_user(user)
         role = getattr(user_obj, 'roles', 'common role')
@@ -176,14 +174,3 @@ def make_env_builder(action_name: str, resource_type: str):
     return build_env
 
 
-async def get_current_user(
-    current_username: str = Depends(get_user_from_token),
-    db: AsyncSession = Depends(get_async_session)  # Добавьте эту зависимость
-) -> User:
-    user = await get_user(current_username, db)  # Теперь передаем db
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    return user

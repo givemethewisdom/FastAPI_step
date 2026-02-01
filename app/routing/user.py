@@ -1,5 +1,3 @@
-import logging
-from datetime import datetime, timezone
 from typing import List
 
 from fastapi import Depends, HTTPException, APIRouter
@@ -11,14 +9,10 @@ from starlette import status
 
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
-from app.exceptions import CustomException
-from app.logger import logger
-
 from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
-from app.services.hash_password import PasswordService
+from auth.dependencies import get_current_user
 from auth.guard import guard
-from auth.security import create_access_token, create_refresh_token, get_user_from_token, make_env_builder, \
-    get_current_user
+from auth.security import get_user_from_token, make_env_builder
 
 router = APIRouter(
     prefix="/users",
@@ -27,10 +21,11 @@ router = APIRouter(
 
 
 @router.get("/admin", dependencies=[
-    Depends(require_access(guard, make_env_builder("admin_only", "page")))
+    Depends(require_access(guard, make_env_builder("view_user", "page")))
 ])
 async def admin_info(current_user: User = Depends(get_current_user)):
-    return {"message": f"Hello, {current_user.username}! Welcome to the admin page."}
+    return current_user
+
 
 @router.post("/create", response_model=UserTokenResponse)
 async def create_user(
@@ -38,70 +33,35 @@ async def create_user(
         session: AsyncSession = Depends(get_async_session)
 ):
     """
-    Создание нового пользователя в базе данных.
-
-    Возвращает:
-    - UserReturn с данными созданного пользователя и ID из БД
-
-    Пример тела запроса:
-    {
-        "username": "string",
-        "info": "string",
-        "password": "string"
-    }
+    Создание нового пользователя.
     """
-
-    # возможна гонка но глобальный Exceptiom hendler даст 500 из-за
-    # username = Column(String(45), nullable=False, unique=True
-    stmt = select(UserDB).where(UserDB.username == user.username)
-    user_lrdy_exist = await session.scalar(stmt)
-    if user_lrdy_exist:
-        raise CustomException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail='Costum exception user lrdy exist',
-            message='some message caz i can'
-        )
-
     try:
-        # Создаем объект БД
-        user_dict = user.model_dump()
-        db_user = UserDB(**user_dict)
-        #все получают роль user
-        db_user.roles = 'user'
-
-        # Добавляем и сохраняем
-        session.add(db_user)
-        await session.commit()
-        await session.refresh(db_user)  # запрашиваем  ID из DB т.к. при commit id еще не сушществует
-
-        access_token = create_access_token({'sub': db_user.username})
-        refresh_token = create_refresh_token({'sub': db_user.username})
-
-        return UserTokenResponse(
-            id=db_user.id,
-            username=db_user.username,
-            info=db_user.info,
-            access_token=access_token,
-            refresh_token=refresh_token
-        )
+        from DataBase.repository import create_user_with_tokens
+        return await create_user_with_tokens(user, session)
 
     except HTTPException:
+        # Пробрасываем HTTP исключения как есть
         raise
 
     except Exception as e:
+        # Обработка неожиданных ошибок
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'ошибка создания пользователя {str(e)}'
+            detail=f"Ошибка создания пользователя: {str(e)}"
         )
 
 
-@router.get("/get_all", response_model=List[UserReturn])
+@router.get("/get_all", dependencies=[
+    Depends(require_access(guard, make_env_builder("view_user", "page")))
+], response_model=List[UserReturn])
 async def get_all_users(
         skip: int = 0,
         limit: int = 10,
-        session: AsyncSession = Depends(get_async_session)
+        session: AsyncSession = Depends(get_async_session),
+
 ):
     """
+    делаем 2 разных запроса т.к. RBAC использует синхронное подключение и хранить роль в токене не хочется
     Получение информации о всех порльзователях.
 
     Параметры:

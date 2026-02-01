@@ -1,29 +1,15 @@
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+
 from sqlalchemy.testing.pickleable import User
+from starlette import status
 
 from DataBase.Shemas import UserDB
-
-USERS_DATA = [
-    {
-        "username": "admin",
-        "password": "adminpass",  # В продакшене пароли должны быть хешированы!
-        "roles": ["admin"],
-        "full_name": "Admin User",
-        "email": "admin@example.com",
-        "disabled": False
-    },
-    {
-        "username": "user",
-        "password": "userpass",
-        "roles": ["user"],
-        "full_name": "Regular User",
-        "email": "user@example.com",
-        "disabled": False
-    },
-]
-
+from app.models.models import UserCreate, UserTokenResponse
+from app.services.hash_password import pwd_context
+from auth.security import create_access_token, create_refresh_token
+"""тут много лишнего нужно разделять (как-нибудь в другой раз)"""
 
 async def get_user(username: str, db: AsyncSession) -> User | None:
     """
@@ -32,7 +18,6 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     """
     from sqlalchemy import select
 
-    # Простой запрос без selectinload
     result = await db.execute(
         select(UserDB).where(UserDB.username == username)
     )
@@ -45,7 +30,7 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     # Если roles это "admin" -> ["admin"]
     # Если roles это "user,admin" -> ["user", "admin"]
     # Если roles это None или пустая строка -> ["user"] (по умолчанию)
-    roles_str = db_user.roles or "user"
+    roles_str = db_user.roles
 
     # Разделяем строку по запятой и убираем пробелы
     if "," in roles_str:
@@ -57,7 +42,62 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     return User(
         username=db_user.username,
         roles=roles_list,  # Теперь это список
-        full_name=db_user.info,  # или другое поле, если есть
-        email=None,  # или добавьте поле email в модель
-        disabled=False  # или добавьте поле disabled
+        info=db_user.info,  # или другое поле, если есть
+    )
+
+
+async def check_user_exists(username: str, db: AsyncSession) -> bool:
+    """Проверить существует ли пользователь"""
+    result = await db.execute(
+        select(UserDB).where(UserDB.username == username)
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def create_new_user(user_data: UserCreate, db: AsyncSession) -> UserDB:
+    """
+    Создать нового пользователя в БД.
+    Возвращает SQLAlchemy модель UserDB.
+    """
+
+    hashed_password = pwd_context.hash(user_data.password)
+
+    # Создаем пользователя
+    db_user = UserDB(
+        username=user_data.username,
+        password=hashed_password,  # Храним хеш!
+        info=user_data.info,
+        roles='user'  # Все новые пользователи получают роль 'user'
+    )
+
+    db.add(db_user)
+    await db.commit()
+    await db.refresh(db_user)
+    return db_user
+
+
+async def create_user_with_tokens(user_data: UserCreate, db: AsyncSession) -> UserTokenResponse:
+    """
+    Полный цикл создания пользователя с токенами.
+    """
+    if await check_user_exists(user_data.username, db):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Пользователь {user_data.username} уже существует"
+        )
+
+    # 2. Создаем пользователя в БД
+    db_user = await create_new_user(user_data, db)
+
+    # 3. Создаем токены
+    access_token = create_access_token({'sub': db_user.username})
+    refresh_token = create_refresh_token({'sub': db_user.username})
+
+    # 4. Формируем ответ
+    return UserTokenResponse(
+        id=db_user.id,
+        username=db_user.username,
+        info=db_user.info,
+        access_token=access_token,
+        refresh_token=refresh_token
     )
