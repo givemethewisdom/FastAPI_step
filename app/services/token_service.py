@@ -1,0 +1,45 @@
+from datetime import timedelta, datetime
+
+from passlib.context import CryptContext
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+class TokenService:
+    def __init__(self):
+        "взял просто с пароля"
+        self.pwd_context = CryptContext(
+            schemes=["argon2"],
+            deprecated="auto",
+            argon2__time_cost=2,
+            argon2__memory_cost=1024,
+            argon2__parallelism=2,
+        )
+
+    def hash_token(self, token: str) -> str:
+        """Хеширование токена"""
+        return self.pwd_context.hash(token)
+
+    def verify_token(self, token: str, token_hash: str) -> bool:
+        """Проверка токена с хешем"""
+        return self.pwd_context.verify(token, token_hash)
+
+    async def save_refresh_token_in_db(
+            self,
+            user_id: int,
+            token: str,
+            db_session: AsyncSession,
+    ):
+        """Сохраняет refresh token в базу данных"""
+        from DataBase.repository import save_refresh_token
+        from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES
+
+        token_hash = self.hash_token(token)
+
+        expire_at = datetime.now() + timedelta(REFRESH_TOKEN_EXPIRE_MINUTES)
+
+        return await save_refresh_token(
+            user_id=user_id,
+            token_hash=token_hash,
+            expire_at=expire_at,
+            db=db_session
+        )

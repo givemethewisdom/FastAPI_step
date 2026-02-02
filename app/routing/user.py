@@ -10,6 +10,7 @@ from starlette import status
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
 from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
+from app.services.token_service import TokenService
 from auth.dependencies import get_current_user
 from auth.guard import guard
 from auth.security import get_user_from_token, make_env_builder
@@ -33,18 +34,26 @@ async def create_user(
         session: AsyncSession = Depends(get_async_session)
 ):
     """
-    Создание нового пользователя.
+    Создание нового пользователя.и добавление хеша его access токена в бд
     """
     try:
         from DataBase.repository import create_user_with_tokens
-        return await create_user_with_tokens(user, session)
+        new_user_info = await create_user_with_tokens(user, session)
+
+        token_service = TokenService()
+
+        await token_service.save_refresh_token_in_db(
+            user_id=new_user_info.id,
+            token=new_user_info.refresh_token,
+            db_session=session
+        )
+        return new_user_info
 
     except HTTPException:
-        # Пробрасываем HTTP исключения как есть
+         #Пробрасываем HTTP исключения как есть
         raise
 
     except Exception as e:
-        # Обработка неожиданных ошибок
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка создания пользователя: {str(e)}"
@@ -103,6 +112,8 @@ async def get_current_user_info(
     return {
         "message": {username}
     }
+
+
 # 4) Маршрут для админов — проверяем доступ через rbacx
 
 

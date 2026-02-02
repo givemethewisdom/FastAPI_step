@@ -1,15 +1,17 @@
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
-from DataBase.Shemas import UserDB
+from DataBase.Shemas import UserDB, TokenDB
 from app.models.models import UserCreate, UserTokenResponse
 from app.services.hash_password import pwd_context
 from auth.security import create_access_token, create_refresh_token
+
 """тут много лишнего нужно разделять (как-нибудь в другой раз)"""
+
 
 async def get_user(username: str, db: AsyncSession) -> User | None:
     """
@@ -86,14 +88,11 @@ async def create_user_with_tokens(user_data: UserCreate, db: AsyncSession) -> Us
             detail=f"Пользователь {user_data.username} уже существует"
         )
 
-    # 2. Создаем пользователя в БД
     db_user = await create_new_user(user_data, db)
 
-    # 3. Создаем токены
     access_token = create_access_token({'sub': db_user.username})
     refresh_token = create_refresh_token({'sub': db_user.username})
 
-    # 4. Формируем ответ
     return UserTokenResponse(
         id=db_user.id,
         username=db_user.username,
@@ -101,3 +100,25 @@ async def create_user_with_tokens(user_data: UserCreate, db: AsyncSession) -> Us
         access_token=access_token,
         refresh_token=refresh_token
     )
+
+
+# async def delete_refresh_token(user_id:int, db:AsyncSession)->bool:
+# 'Удаляет токен по юзер ID'
+# await db.execute(
+# delete(TokenDB).where(TokenDB.user_id == user_id)
+# )
+# return True
+async def save_refresh_token(user_id: int, token_hash: str, expire_at, db: AsyncSession):
+    await db.execute(
+        delete(TokenDB).where(TokenDB.user_id == user_id)
+    )
+
+    db_token = TokenDB(
+        user_id=user_id,
+        refresh_token=token_hash,
+        expires_at=expire_at,
+    )
+
+    db.add(db_token)
+    await db.commit()
+    return db_token
