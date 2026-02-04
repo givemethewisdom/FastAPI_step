@@ -11,6 +11,7 @@ from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
 from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
 from app.services.token_service import TokenService
+from app.services.user_service import UserService
 from auth.dependencies import get_current_user
 from auth.guard import guard
 from auth.security import get_user_from_token, make_env_builder
@@ -37,11 +38,10 @@ async def create_user(
     Создание нового пользователя.и добавление хеша его access токена в бд
     """
     try:
-        from DataBase.repository import create_user_with_tokens
-        new_user_info = await create_user_with_tokens(user, session)
+        user_service = UserService()
+        new_user_info = await user_service.create_user_with_tokens(user, session)
 
         token_service = TokenService()
-
         await token_service.save_refresh_token_in_db(
             user_id=new_user_info.id,
             token=new_user_info.refresh_token,
@@ -114,7 +114,6 @@ async def get_current_user_info(
     }
 
 
-# 4) Маршрут для админов — проверяем доступ через rbacx
 
 
 @router.get("/{user_id}", response_model=UserReturn)
