@@ -9,6 +9,7 @@ from starlette import status
 
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
+from app.logger import logger
 from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
@@ -22,11 +23,39 @@ router = APIRouter(
 )
 
 
+# , dependencies=[
+#    Depends(require_access(guard, make_env_builder("admin_only", "page")))
+# ]
 @router.get("/admin", dependencies=[
     Depends(require_access(guard, make_env_builder("view_user", "page")))
 ])
 async def admin_info(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+# get token решил сделать по username хотя лучше было бы по id (наверное)
+@router.get("/get_user_token")
+async def get_user_token(
+        username: str,
+        session: AsyncSession = Depends(get_async_session)
+):
+    "get refresh token by user name"
+    try:
+
+        token_service = TokenService()
+        res = await token_service.get_refresh_token_from_db(username=username, db_session=session)
+        logger.debug('awdawd')
+        return res
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        logger.error(f'some error in @router.get("/get_user_token"): {e}')  # все еще не уверен на счет f-string
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='unexpected server error'
+        )
 
 
 @router.post("/create", response_model=UserTokenResponse)
@@ -50,7 +79,7 @@ async def create_user(
         return new_user_info
 
     except HTTPException:
-         #Пробрасываем HTTP исключения как есть
+        # Пробрасываем HTTP исключения как есть
         raise
 
     except Exception as e:
@@ -112,8 +141,6 @@ async def get_current_user_info(
     return {
         "message": {username}
     }
-
-
 
 
 @router.get("/{user_id}", response_model=UserReturn)

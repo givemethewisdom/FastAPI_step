@@ -2,9 +2,13 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy.testing.pickleable import User
+from starlette import status
 
 from DataBase.Shemas import UserDB, TokenDB
+from app.exceptions import CustomException
+from app.logger import logger
 from app.models.models import UserCreate
+from app.models.models_token import RefreshTokenResponse
 from app.services.hash_password import pwd_context
 
 """тут много лишнего нужно разделять (как-нибудь в другой раз)"""
@@ -45,12 +49,13 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     )
 
 
-async def check_user_exists(username: str, db: AsyncSession) -> bool:
-    """Проверить существует ли пользователь"""
+async def check_user_exists(username: str, db: AsyncSession) -> UserDB | None:
+    """Проверить существует ли пользователь по username"""
     result = await db.execute(
         select(UserDB).where(UserDB.username == username)
     )
-    return result.scalar_one_or_none() is not None
+    user = result.scalar_one_or_none()
+    return user
 
 
 async def create_new_user(user_data: UserCreate, db: AsyncSession) -> UserDB:
@@ -95,3 +100,25 @@ async def save_refresh_token(user_id: int, token_hash: str, expire_at, db: Async
     db.add(db_token)
     await db.commit()
     return db_token
+
+
+async def get_refresh_token(user_id: int, db: AsyncSession) -> TokenDB | None:
+    try:
+        res = await db.execute(
+            select(TokenDB).where(TokenDB.user_id == user_id)
+        )
+
+        refresh_token = res.scalar_one_or_none()
+
+        if not refresh_token:
+            return None
+
+        return refresh_token
+
+    except Exception as e:
+        logger.error(f'Some server problem: {e}')
+        raise CustomException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='server error',
+            message='Я уже не знаю что тут придумать'
+        )

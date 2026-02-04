@@ -1,7 +1,13 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
+from fastapi import HTTPException
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
+
+
+from app.logger import logger
+from app.models.models_token import RefreshTokenResponse
 
 
 class TokenService:
@@ -43,3 +49,33 @@ class TokenService:
             expire_at=expire_at,
             db=db_session
         )
+
+    async def get_refresh_token_from_db(self, username:str, db_session: AsyncSession) -> RefreshTokenResponse:
+        "получаем refresh token по username"
+        from DataBase.repository import get_refresh_token
+        from DataBase.repository import check_user_exists
+
+        user = await check_user_exists(username, db_session)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        token = await get_refresh_token(user_id=user.id, db=db_session)
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User have no any tokens"
+            )
+
+        if token.expires_at < datetime.now(tz=timezone.utc):
+            #лучше навернео сразу удалять его но пусть будет
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail="Token has expired"
+            )
+
+        return token
+
