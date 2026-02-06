@@ -19,12 +19,8 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     Получение пользователя из БД, где roles хранится как строка.
     Например: "admin" или "user,admin" или "user"
     """
-    from sqlalchemy import select
 
-    result = await db.execute(
-        select(UserDB).where(UserDB.username == username)
-    )
-    db_user = result.scalar_one_or_none()
+    db_user = check_user_exists(username=username, db=db)
 
     if not db_user:
         return None
@@ -32,14 +28,14 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     # Преобразуем строку roles в список
     # Если roles это "admin" -> ["admin"]
     # Если roles это "user,admin" -> ["user", "admin"]
-    # Если roles это None или пустая строка -> ["user"] (по умолчанию)
+    # Если roles это None или пустая строка -> ["guest"] (по умолчанию)
     roles_str = db_user.roles
 
     # Разделяем строку по запятой и убираем пробелы
     if "," in roles_str:
         roles_list = [role.strip() for role in roles_str.split(",")]
     else:
-        roles_list = [roles_str.strip()] if roles_str.strip() else ["user"]
+        roles_list = [roles_str.strip()] if roles_str.strip() else ["guest"]
 
     # Конвертируем SQLAlchemy модель в Pydantic модель
     return User(
@@ -58,34 +54,35 @@ async def check_user_exists(username: str, db: AsyncSession) -> UserDB | None:
     return user
 
 
-async def create_new_user(user_data: UserCreate, db: AsyncSession) -> UserDB:
+async def create_new_user(user: UserCreate, role, db: AsyncSession) -> UserDB:
     """
     Создать нового пользователя в БД.
     Возвращает SQLAlchemy модель UserDB.
     """
 
-    hashed_password = pwd_context.hash(user_data.password)
+    hashed_password = pwd_context.hash(user.password)
 
     # Создаем пользователя
     db_user = UserDB(
-        username=user_data.username,
-        password=hashed_password,  # Храним хеш!
-        info=user_data.info,
-        roles='user'  # Все новые пользователи получают роль 'user'
+        username=user.username,
+        password=hashed_password,
+        info=user.info,
+        roles=role
     )
 
     db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
     return db_user
 
 
-# async def delete_refresh_token(user_id:int, db:AsyncSession)->bool:
-# 'Удаляет токен по юзер ID'
-# await db.execute(
-# delete(TokenDB).where(TokenDB.user_id == user_id)
-# )
-# return True
+async def delete_refresh_token(user_id: int, db: AsyncSession) -> bool:
+    """Удаляет токен по юзер ID"""
+    #просто накидал. надо доделать
+    await db.execute(
+        delete(TokenDB).where(TokenDB.user_id == user_id)
+    )
+    return True
+
+
 async def save_refresh_token(user_id: int, token_hash: str, expire_at, db: AsyncSession):
     await db.execute(
         delete(TokenDB).where(TokenDB.user_id == user_id)
@@ -98,7 +95,6 @@ async def save_refresh_token(user_id: int, token_hash: str, expire_at, db: Async
     )
 
     db.add(db_token)
-    await db.commit()
     return db_token
 
 
@@ -116,6 +112,7 @@ async def get_refresh_token(user_id: int, db: AsyncSession) -> TokenDB | None:
         return refresh_token
 
     except Exception as e:
+        # вообще таукие ошибки глобал хендлер будет перехватывать
         logger.error(f'Some server problem: {e}')
         raise CustomException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

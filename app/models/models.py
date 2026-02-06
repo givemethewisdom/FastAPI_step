@@ -17,7 +17,6 @@ class UserCreate(UserBase):
     """
     password: str = Field(min_length=3, max_length=128)
 
-
     @field_validator('password')
     def validate_password(cls, password):
         # нужно прочитать как работает Field min_length = 3 и if len(password)<3
@@ -33,11 +32,12 @@ class UserReturn(UserBase):
     Включает технические поля из БД (id) и исключает чувствительные данные.
     """
     id: int  # ID всегда присфутствует после сохранения в БД
-    roles: None | str = None #пока может быть None для отладки но надо поменять
+    roles: None | str = None  # пока может быть None для отладки но надо поменять
 
 
-class UserTokenResponse(UserReturn):
+class UserAccessResponse(UserReturn):
     access_token: str
+
+
+class UserRefreshResponse(UserReturn):
     refresh_token: str
-
-

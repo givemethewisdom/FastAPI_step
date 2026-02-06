@@ -12,9 +12,9 @@ from auth.security import get_user_from_token
 
 async def get_current_user(
     current_username: str = Depends(get_user_from_token),
-    db: AsyncSession = Depends(get_async_session)  # Добавьте эту зависимость
+    db: AsyncSession = Depends(get_async_session)
 ) -> User:
-    user = await get_user(current_username, db)  # Теперь передаем db
+    user = await get_user(current_username, db)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -10,7 +10,8 @@ from starlette import status
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
 from app.logger import logger
-from app.models.models import UserReturn, UserCreate, UserBase, UserTokenResponse
+from app.models.models import UserReturn, UserCreate, UserBase, UserAccessResponse
+from app.models.models_token import RefreshTokenResponse
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
 from auth.dependencies import get_current_user
@@ -23,9 +24,6 @@ router = APIRouter(
 )
 
 
-# , dependencies=[
-#    Depends(require_access(guard, make_env_builder("admin_only", "page")))
-# ]
 @router.get("/admin", dependencies=[
     Depends(require_access(guard, make_env_builder("view_user", "page")))
 ])
@@ -33,24 +31,66 @@ async def admin_info(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-# get token решил сделать по username хотя лучше было бы по id (наверное)
-@router.get("/get_user_token")
-async def get_user_token(
+@router.post('/login')
+async def login(
         username: str,
+        password: str,
         session: AsyncSession = Depends(get_async_session)
 ):
+
     "get refresh token by user name"
     try:
+        if not login_user():
+
 
         token_service = TokenService()
-        res = await token_service.get_refresh_token_from_db(username=username, db_session=session)
-        logger.debug('awdawd')
+        res = await token_service.get_refresh_token_from_db(user_id=, db_session=session)
         return res
 
     except HTTPException:
         raise
 
     except Exception as e:
+        "есть глобал хендлер и это по сути не нужно"
+        logger.error(f'some error in @router.get("/get_user_token"): {e}')  # все еще не уверен на счет f-string
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='unexpected server error'
+        )
+
+@router.post("/fast_create_admin", response_model=UserReturn)
+async def fast_create_admin(
+        user: UserCreate,
+        session: AsyncSession = Depends(get_async_session)
+) -> UserAccessResponse:
+
+    user_service = UserService()
+    new_user_info = await user_service.create_user_with_tokens(
+        user=user,
+        role='admin',
+        db=session,
+    )
+
+    return new_user_info
+
+
+# get token решил сделать по username хотя лучше было бы по id (наверное)
+@router.get("/get_user_token")
+async def get_user_token(
+        user_id: int,
+        session: AsyncSession = Depends(get_async_session)
+):
+    "просто быстрый способ получить токен для отладки"
+    try:
+        token_service = TokenService()
+        res = await token_service.get_refresh_token_from_db(user_id=user_id, db_session=session)
+        return res
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        "есть глобал хендлер и это по сути не нужно"
         logger.error(f'some error in @router.get("/get_user_token"): {e}')  # все еще не уверен на счет f-string
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -58,7 +98,7 @@ async def get_user_token(
         )
 
 
-@router.post("/create", response_model=UserTokenResponse)
+@router.post("/create", response_model=UserAccessResponse)
 async def create_user(
         user: UserCreate,
         session: AsyncSession = Depends(get_async_session)
@@ -68,7 +108,11 @@ async def create_user(
     """
     try:
         user_service = UserService()
-        new_user_info = await user_service.create_user_with_tokens(user, session)
+        new_user_info = await user_service.create_user_with_tokens(
+            user=user,
+            role='user',
+            db=session
+        )
 
         token_service = TokenService()
         await token_service.save_refresh_token_in_db(
@@ -98,18 +142,7 @@ async def get_all_users(
         session: AsyncSession = Depends(get_async_session),
 
 ):
-    """
-    делаем 2 разных запроса т.к. RBAC использует синхронное подключение и хранить роль в токене не хочется
-    Получение информации о всех порльзователях.
 
-    Параметры:
-    - skip - смещение
-    - limit - Кол-во юзеров
-
-    Возвращает:
-    - Данные пользователей в формате UserReturn
-    - пуцстой список если нет пользователей
-    """
     try:
         query = await session.execute(
             select(UserDB)
@@ -135,9 +168,7 @@ async def get_current_user_info(
 ):
     """
     Получить информацию о текущем пользователе.
-    Требует access токен в заголовке Authorization.
     """
-    # username уже извлечен из токена
     return {
         "message": {username}
     }
@@ -184,24 +215,7 @@ async def update_user(
         user: UserBase,
         session: AsyncSession = Depends(get_async_session)
 ):
-    """
-    Полное обновление данных пользователя по ID.
 
-    Параметры:
-    - user_id: ID пользователя в базе данных
-    - user: новые данные пользователя (все кроме info обязательно)
-
-    Возвращает:
-    - Обновленные данные пользователя в формате UserReturn
-    - 404 ошибку если пользователь не найден
-    - 500 ошибку при проблемах с базой данных
-
-    Пример запроса:
-    {
-        "username": "string",
-        "info": "string",
-    }
-    """
     try:
         update_data = user.model_dump(exclude_unset=True)
 

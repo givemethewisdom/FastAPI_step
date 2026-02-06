@@ -8,7 +8,7 @@ class RefreshTokenResponse(BaseModel):
     token_id: int
     user_id: int
     username:str
-    hashed_refresh_token: str
+    refresh_token: str
     created_at: datetime
     expires_at: datetime
 
