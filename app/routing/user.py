@@ -10,13 +10,12 @@ from starlette import status
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
 from app.logger import logger
-from app.models.models import UserReturn, UserCreate, UserBase, UserAccessResponse
-from app.models.models_token import RefreshTokenResponse
+from app.models.models import UserPass, UserTokenResponse, UserCreate, UserReturn, UserBase
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
 from auth.dependencies import get_current_user
 from auth.guard import guard
-from auth.security import get_user_from_token, make_env_builder
+from auth.security import make_env_builder, get_user_from_token
 
 router = APIRouter(
     prefix="/users",
@@ -31,58 +30,58 @@ async def admin_info(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post('/login')
-async def login(
-        username: str,
-        password: str,
+@router.post('/log_in')
+async def log_in(
+        user: UserPass,
+        user_service: UserService = Depends(UserService),
         session: AsyncSession = Depends(get_async_session)
 ):
-
-    "get refresh token by user name"
+    ""
     try:
-        if not login_user():
+        logger.info("name %s pass %s", user.username, user.password)
+        user = await user_service.login_user(
+            username=user.username,
+            password=user.password,
+            db=session
+        )
 
-
-        token_service = TokenService()
-        res = await token_service.get_refresh_token_from_db(user_id=, db_session=session)
-        return res
+        return user
 
     except HTTPException:
         raise
 
     except Exception as e:
         "есть глобал хендлер и это по сути не нужно"
-        logger.error(f'some error in @router.get("/get_user_token"): {e}')  # все еще не уверен на счет f-string
+        logger.error('some error in @router.get("/get_user_token"): %s', e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='unexpected server error'
         )
 
-@router.post("/fast_create_admin", response_model=UserReturn)
+
+@router.post("/fast_create_admin", response_model=UserTokenResponse)
 async def fast_create_admin(
         user: UserCreate,
+        user_service: UserService = Depends(UserService),
         session: AsyncSession = Depends(get_async_session)
-) -> UserAccessResponse:
-
-    user_service = UserService()
+) -> UserTokenResponse:
     new_user_info = await user_service.create_user_with_tokens(
         user=user,
         role='admin',
         db=session,
     )
-
+    # нужно потом разобратсья что делать если все сломалось после commit но до return
     return new_user_info
 
 
-# get token решил сделать по username хотя лучше было бы по id (наверное)
 @router.get("/get_user_token")
 async def get_user_token(
         user_id: int,
+        token_service: TokenService = Depends(TokenService),
         session: AsyncSession = Depends(get_async_session)
 ):
-    "просто быстрый способ получить токен для отладки"
+    "просто быстрый способ получить токен для отладки(hashed)"
     try:
-        token_service = TokenService()
         res = await token_service.get_refresh_token_from_db(user_id=user_id, db_session=session)
         return res
 
@@ -98,23 +97,23 @@ async def get_user_token(
         )
 
 
-@router.post("/create", response_model=UserAccessResponse)
+@router.post("/create", response_model=UserTokenResponse)
 async def create_user(
         user: UserCreate,
+        user_service: UserService = Depends(UserService),
+        token_service: TokenService = Depends(TokenService),
         session: AsyncSession = Depends(get_async_session)
 ):
     """
     Создание нового пользователя.и добавление хеша его access токена в бд
     """
     try:
-        user_service = UserService()
         new_user_info = await user_service.create_user_with_tokens(
             user=user,
             role='user',
             db=session
         )
 
-        token_service = TokenService()
         await token_service.save_refresh_token_in_db(
             user_id=new_user_info.id,
             token=new_user_info.refresh_token,
@@ -127,22 +126,21 @@ async def create_user(
         raise
 
     except Exception as e:
+        logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка создания пользователя: {str(e)}"
+            detail=f"Ошибка создания пользователя:"
         )
 
 
 @router.get("/get_all", dependencies=[
-    Depends(require_access(guard, make_env_builder("view_user", "page")))
+    Depends(require_access(guard, make_env_builder("admin_only", "page")))
 ], response_model=List[UserReturn])
 async def get_all_users(
         skip: int = 0,
         limit: int = 10,
         session: AsyncSession = Depends(get_async_session),
-
 ):
-
     try:
         query = await session.execute(
             select(UserDB)
@@ -215,7 +213,6 @@ async def update_user(
         user: UserBase,
         session: AsyncSession = Depends(get_async_session)
 ):
-
     try:
         update_data = user.model_dump(exclude_unset=True)
 

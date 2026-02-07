@@ -8,6 +8,7 @@ import jwt
 from fastapi import Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordBearer
 from fastapi_limiter.depends import RateLimiter
+from passlib.context import CryptContext
 from rbacx import Subject, Action, Resource, Context
 from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request

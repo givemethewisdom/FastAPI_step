@@ -20,6 +20,7 @@ class TokenService:
             argon2__parallelism=2,
         )
 
+
     def hash_token(self, token: str) -> str:
         """Хеширование токена"""
         return self.pwd_context.hash(token)
@@ -69,3 +70,4 @@ class TokenService:
             )
 
         return token
+

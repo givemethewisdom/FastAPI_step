@@ -9,7 +9,7 @@ from app.exceptions import CustomException
 from app.logger import logger
 from app.models.models import UserCreate
 from app.models.models_token import RefreshTokenResponse
-from app.services.hash_password import pwd_context
+from app.services.hash_password import PasswordService
 
 """тут много лишнего нужно разделять (как-нибудь в другой раз)"""
 
@@ -20,7 +20,7 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     Например: "admin" или "user,admin" или "user"
     """
 
-    db_user = check_user_exists(username=username, db=db)
+    db_user = await check_user_exists(username=username, db=db)
 
     if not db_user:
         return None
@@ -59,9 +59,7 @@ async def create_new_user(user: UserCreate, role, db: AsyncSession) -> UserDB:
     Создать нового пользователя в БД.
     Возвращает SQLAlchemy модель UserDB.
     """
-
-    hashed_password = pwd_context.hash(user.password)
-
+    hashed_password = PasswordService.hash_password(user.password)
     # Создаем пользователя
     db_user = UserDB(
         username=user.username,

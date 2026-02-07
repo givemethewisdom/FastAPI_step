@@ -8,7 +8,7 @@ from app.logger import logger
 
 class CustomException(HTTPException):
     def __init__(self, detail: str, status_code: int, message: str):
-        logger.debug('заглушка для кастом ексепшена')
+        logger.debug('заглушка для кастом ексепшена из app/Exceptions')
         super().__init__(status_code=status_code, detail=detail)
         self.message = message
 
