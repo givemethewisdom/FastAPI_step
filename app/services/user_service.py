@@ -44,12 +44,18 @@ class UserService:
                     db=db
                 )
 
-                access_token = create_access_token({'sub': db_user.username})
-                refresh_token = create_refresh_token({'sub': db_user.username})
-
                 await db.flush()
 
-                await token_service.save_refresh_token_in_db(
+                access_token = create_access_token({
+                    'sub': db_user.username,#sub username а не id потому уже много завязано на этот клейм
+                    'uid': db_user.id
+                })
+                refresh_token = create_refresh_token({
+                    'sub': db_user.username,
+                    'uid': db_user.id
+                })
+
+                await token_service.save_refresh_token_in_db_service(
                     user_id=db_user.id,
                     token=refresh_token,
                     db_session=db
@@ -103,11 +109,17 @@ class UserService:
 
                 password_service.verify_password(password, user.password)
 
-                access_token = create_access_token({'sub': username})
-                refresh_token = create_refresh_token({'sub': username})
-                logger.error('awdawdaw')
+                access_token = create_access_token({
+                    'sub': username,
+                    'uid': user.id
+                })
+                logger.warning('Нужно протестить клейм uid в login_user!!!!!')
+                refresh_token = create_refresh_token({
+                    'sub': username,
+                    'uid': user.id
+                })
 
-                await token_service.save_refresh_token_in_db(
+                await token_service.save_refresh_token_in_db_service(
                     user_id=user.id,
                     token=refresh_token,
                     db_session=db

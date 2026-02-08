@@ -13,7 +13,7 @@ from app.logger import logger
 from app.models.models import UserPass, UserTokenResponse, UserCreate, UserReturn, UserBase
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, get_access_from_refresh_token
 from auth.guard import guard
 from auth.security import make_env_builder, get_user_from_token
 
@@ -30,7 +30,13 @@ async def admin_info(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post('/log_in')
+@router.get('/get_access_token')
+async def get_access_token(access_token: User = Depends(get_access_from_refresh_token)):
+    'проверка входного refresh токена и генерация access'
+    return access_token
+
+
+@router.post('/log_in', response_model=UserTokenResponse)
 async def log_in(
         user: UserPass,
         user_service: UserService = Depends(UserService),
@@ -84,7 +90,7 @@ async def get_user_token(
 ):
     "просто быстрый способ получить токен для отладки(hashed)"
     try:
-        res = await token_service.get_refresh_token_from_db(user_id=user_id, db_session=session)
+        res = await token_service.get_refresh_token_from_db_service(user_id=user_id, db_session=session)
         return res
 
     except HTTPException:
@@ -116,7 +122,7 @@ async def create_user(
             db=session
         )
 
-        await token_service.save_refresh_token_in_db(
+        await token_service.save_refresh_token_in_db_service(
             user_id=new_user_info.id,
             token=new_user_info.refresh_token,
             db_session=session
@@ -150,7 +156,6 @@ async def get_all_users(
             .limit(limit)
             .order_by(UserDB.id)
         )
-
 
         users = query.scalars().all()
 

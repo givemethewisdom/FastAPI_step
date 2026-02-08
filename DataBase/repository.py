@@ -38,11 +38,10 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     else:
         roles_list = [roles_str.strip()] if roles_str.strip() else ["guest"]
 
-    # Конвертируем SQLAlchemy модель в Pydantic модель
     return User(
         username=db_user.username,
         roles=roles_list,  # Теперь это список
-        info=db_user.info,  # или другое поле, если есть
+        info=db_user.info,
     )
 
 
@@ -114,7 +113,7 @@ async def get_refresh_token(user_id: int, db: AsyncSession) -> TokenDB | None:
 
     except Exception as e:
         # вообще таукие ошибки глобал хендлер будет перехватывать
-        logger.error(f'Some server problem: {e}')
+        logger.error('Some server problem: %s',e)
         raise CustomException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='server error',

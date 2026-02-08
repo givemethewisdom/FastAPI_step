@@ -21,15 +21,15 @@ class TokenService:
         )
 
 
-    def hash_token(self, token: str) -> str:
+    def hash_token_service(self, token: str) -> str:
         """Хеширование токена"""
         return self.pwd_context.hash(token)
 
-    def verify_token(self, token: str, token_hash: str) -> bool:
+    def verify_token_service(self, token: str, token_hash: str) -> bool:
         """Проверка токена с хешем"""
         return self.pwd_context.verify(token, token_hash)
 
-    async def save_refresh_token_in_db(
+    async def save_refresh_token_in_db_service(
             self,
             user_id: int,
             token: str,
@@ -39,7 +39,7 @@ class TokenService:
         from DataBase.repository import save_refresh_token
         from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES
 
-        token_hash = self.hash_token(token)
+        token_hash = self.hash_token_service(token)
 
         expire_at = datetime.now() + timedelta(REFRESH_TOKEN_EXPIRE_MINUTES)
 
@@ -50,7 +50,7 @@ class TokenService:
             db=db_session
         )
 
-    async def get_refresh_token_from_db(self, user_id: int, db_session: AsyncSession) -> RefreshTokenResponse:
+    async def get_refresh_token_from_db_service(self, user_id: int, db_session: AsyncSession) -> RefreshTokenResponse:
         "получаем refresh token по username"
         from DataBase.repository import get_refresh_token
 
@@ -70,4 +70,5 @@ class TokenService:
             )
 
         return token
+
 
