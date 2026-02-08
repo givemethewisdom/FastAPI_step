@@ -36,9 +36,11 @@ async def log_in(
         user_service: UserService = Depends(UserService),
         session: AsyncSession = Depends(get_async_session)
 ):
-    ""
+    """Log In юзера с проверкой пароля и токена.
+     если токена нет то юзер не войдет (нужно будет менять пароль и т.п.)
+     реализовывать смену не планирую и такие юзеры пока будут бесполезны
+    """
     try:
-        logger.info("name %s pass %s", user.username, user.password)
         user = await user_service.login_user(
             username=user.username,
             password=user.password,
@@ -148,6 +150,7 @@ async def get_all_users(
             .limit(limit)
             .order_by(UserDB.id)
         )
+
 
         users = query.scalars().all()
 

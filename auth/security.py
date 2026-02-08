@@ -1,4 +1,3 @@
-
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -12,7 +11,6 @@ from passlib.context import CryptContext
 from rbacx import Subject, Action, Resource, Context
 from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request
-
 
 from DataBase.sync_engine import get_user_sync
 from app.logger import logger
@@ -68,23 +66,6 @@ def decode_token(token: str) -> str:
         raise HTTPException(status_code=401, detail="Ошибка авторизации")
 
 
-def decode_token_with_type(required_type: str, token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if required_type:
-            if payload.get("type") != required_type:
-                raise HTTPException(401, detail="Wrong token type")
-            return payload.get("sub")
-        logger.warning('decode_token_with_type have no token type')
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="не найден token type")
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(401, detail="Expired token")
-
-    except jwt.InvalidTokenError:
-        raise HTTPException(401, detail="Invalid token")
-
-
 def check_refresh_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -107,16 +88,38 @@ def check_refresh_token(token: str = Depends(oauth2_scheme)):
 
 
 def username_from_request(request: Request) -> str:
-    """Для rbacx: достаём Bearer-токен вручную и возвращаем subject.id."""
-    auth = request.headers.get("Authorization", '')
-    prefix = 'bearer '
-    if not auth.lower().startswith(prefix):
-        return 'anonymous'
-    token = auth[len(prefix):].strip()
+    """
+    Извлекает username из access токена с проверкой типа.
+    срок действия проверяется автоматически в jwt.decode обработчик в exception_handlers
+    """
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
     try:
-        return decode_token(token)
-    except HTTPException:
-        return 'anonymous'
+        scheme, token = auth_header.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+
+        # Декодируем токен
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+
+        token_type = payload.get("type")
+        if token_type != "access":
+            logger.error("requaired access token got %s", token_type)
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token"
+            )
+
+        return username
+
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format")
 
 
 def require_access_with_rate_limit(guard, resource: str, page: str):
@@ -148,7 +151,7 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
         else:
             limiter = RateLimiter(times=1, seconds=10)
 
-        await limiter(request,response)
+        await limiter(request, response)
         return user
 
     return dependency
@@ -173,5 +176,3 @@ def make_env_builder(action_name: str, resource_type: str):
         return subject, action, resource, context
 
     return build_env
-
-

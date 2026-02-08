@@ -7,13 +7,14 @@ from databases import Database
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from jwt import ExpiredSignatureError
 from rbacx import Guard, HotReloader
 from rbacx.store import FilePolicySource
 
 from DataBase.Database import Base, engine
 from app import logger
 from app.exception_handlers import custom_exception_handler, global_exception_handler, validation_exception_handler, \
-    common_exception_handler
+    common_exception_handler, jwt_exceptions_expired_signature_error_hendler
 from app.exceptions import CustomException, CommonException
 from app.routing import user, todoo
 from auth.guard import guard
@@ -51,6 +52,7 @@ app.add_exception_handler(CustomException, custom_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)  # все еще работает не так как я предпологаю
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(CommonException, common_exception_handler)
+app.add_exception_handler(ExpiredSignatureError, jwt_exceptions_expired_signature_error_hendler)
 
 # Импорт роутеров
 app.include_router(user.router)

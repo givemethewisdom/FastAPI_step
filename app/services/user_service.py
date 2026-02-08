@@ -85,15 +85,20 @@ class UserService:
             password_service = PasswordService()
             async with db.begin():
                 user = await check_user_exists(username=username, db=db)
-                logger.debug(password)
-                logger.debug(user.password)
 
                 if not user:
-                    logger.debug('User is %s', user)
                     raise CustomException(
                         status_code=status.HTTP_404_NOT_FOUND,
                         detail='wrong username or password',
                         message='на самом деле только юзер но не палим перед брут форсом'
+                    )
+
+                if not user.token:
+                    logger.debug('User %s with recalled token trying to login', username)
+                    raise CustomException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail='ur account was deleted by admin',
+                        message='обратитесь к администратору'
                     )
 
                 password_service.verify_password(password, user.password)

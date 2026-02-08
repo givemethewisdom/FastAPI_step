@@ -1,5 +1,6 @@
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
 from sqlalchemy.testing.pickleable import User
 from starlette import status
@@ -46,9 +47,11 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
 
 
 async def check_user_exists(username: str, db: AsyncSession) -> UserDB | None:
-    """Проверить существует ли пользователь по username"""
+    """Проверить существует ли пользователь по username и активен ли токен"""
     result = await db.execute(
-        select(UserDB).where(UserDB.username == username)
+        select(UserDB)
+        .options(selectinload(UserDB.token))
+        .where(UserDB.username == username)
     )
     user = result.scalar_one_or_none()
     return user
