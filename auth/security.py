@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict
 
 import jwt
-from fastapi import Depends, HTTPException, status, Response
+from fastapi import Depends, HTTPException, Response
 from fastapi.security import OAuth2PasswordBearer
 from fastapi_limiter.depends import RateLimiter
 from rbacx import Subject, Action, Resource, Context
@@ -13,8 +13,6 @@ from starlette.requests import Request
 
 from DataBase.sync_engine import get_user_sync
 from app.logger import logger
-from app.services.token_service import TokenService
-from DataBase.repository import check_user_exists
 
 # OAuth2PasswordBearer извлекает токен из заголовка "Authorization: Bearer <token>"
 # Параметр tokenUrl указывает маршрут, по которому клиенты смогут получить токен
@@ -47,11 +45,6 @@ def create_refresh_token(data: Dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_user_from_token(token: str = Depends(oauth2_scheme)) -> str:
-    """DI-обёртка под FastAPI (используем в dependencies.py)."""
-    return decode_token(token)
-
-
 def decode_token(token: str) -> str:
     """Возвращает username из токена (клейм `sub`)."""
     try:
@@ -67,17 +60,16 @@ def decode_token(token: str) -> str:
         raise HTTPException(status_code=401, detail="Ошибка авторизации")
 
 
-def check_refresh_token(token: str = Depends(oauth2_scheme)) -> Dict:
-    "проверяет валидность токена по типу refresh, отдает user_id: int(user_id),usernam: username"
+async def decode_refresh_token(token: str) -> dict:
+    'decode token with type refresh'
     try:
+        logger.debug('token %s',token)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         token_type = payload.get("type")
         user_id = payload.get("uid")
         username = payload.get("sub")
-
         if token_type != "refresh":
             raise HTTPException(401, detail="Wrong token type")
-
         return {
             "user_id": int(user_id),
             "username": username
@@ -88,6 +80,7 @@ def check_refresh_token(token: str = Depends(oauth2_scheme)) -> Dict:
 
     except jwt.InvalidTokenError:
         raise HTTPException(401, detail="Invalid token")
+
 
 
 def username_from_request(request: Request) -> str:

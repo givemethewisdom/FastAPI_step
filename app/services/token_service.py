@@ -1,12 +1,15 @@
 from datetime import timedelta, datetime, timezone
+from typing import Dict
 
-from fastapi import HTTPException
+import jwt
+from fastapi import HTTPException, Depends
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.logger import logger
 from app.models.models_token import RefreshTokenResponse
+from auth.security import oauth2_scheme, SECRET_KEY, ALGORITHM, decode_refresh_token, create_access_token
 
 
 class TokenService:
@@ -20,14 +23,19 @@ class TokenService:
             argon2__parallelism=2,
         )
 
-
     def hash_token_service(self, token: str) -> str:
         """Хеширование токена"""
         return self.pwd_context.hash(token)
 
     def verify_token_service(self, token: str, token_hash: str) -> bool:
         """Проверка токена с хешем"""
-        return self.pwd_context.verify(token, token_hash)
+        try:
+            logger.debug('token %s, token_hash %s', token, token_hash)
+            return self.pwd_context.verify(token, token_hash)
+        except (ValueError, TypeError) as e:
+            # Если хеш поврежден или неверного формата
+            logger.error('verify_token_service has error: %s', e)
+            raise
 
     async def save_refresh_token_in_db_service(
             self,
@@ -50,8 +58,9 @@ class TokenService:
             db=db_session
         )
 
+
     async def get_refresh_token_from_db_service(self, user_id: int, db_session: AsyncSession) -> RefreshTokenResponse:
-        "получаем refresh token по username"
+        "получаем refresh token по user id"
         from DataBase.repository import get_refresh_token
 
         token = await get_refresh_token(user_id=user_id, db=db_session)
@@ -71,4 +80,14 @@ class TokenService:
 
         return token
 
+    async def check_refresh_token_service(
+            self,
+            db: AsyncSession,
+            token: str,
+    ) -> dict:
+        "проверяет валидность токена по типу refresh, отдает user_id: int(user_id),usernam: username"
+        user_data = await decode_refresh_token(token=token)
+        stored_token = await self.get_refresh_token_from_db_service(user_data['user_id'], db)
+        self.verify_token_service(token=token, token_hash=stored_token.refresh_token)
 
+        return user_data

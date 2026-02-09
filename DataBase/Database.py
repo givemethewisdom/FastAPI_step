@@ -1,4 +1,3 @@
-
 import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
@@ -8,7 +7,6 @@ load_dotenv()
 
 # Async PostgreSQL URL (ВАЖНО: postgresql+asyncpg://)
 POSTGRES_URL = os.getenv("POSTGRES_URL")
-
 
 # Async engine
 engine = create_async_engine(
@@ -30,6 +28,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 # Base для моделей
 Base = declarative_base()
+
 
 # Dependency для получения сессии
 async def get_async_session() -> AsyncSession:

@@ -9,7 +9,12 @@ from DataBase.Database import get_async_session
 from DataBase.repository import get_user
 from app.logger import logger
 from app.services.token_service import TokenService
-from auth.security import get_user_from_token, check_refresh_token, create_access_token, decode_token
+from auth.security import create_access_token, decode_token, oauth2_scheme
+
+
+def get_user_from_token(token: str = Depends(oauth2_scheme)) -> str:
+    """DI-обёртка под FastAPI."""
+    return decode_token(token)
 
 
 async def get_current_user(
@@ -26,17 +31,17 @@ async def get_current_user(
 
 
 async def get_access_from_refresh_token(
-        token_service: TokenService = Depends(TokenService),
-        current_user: dict = Depends(check_refresh_token),
-        db: AsyncSession = Depends(get_async_session)
+        token: str = Depends(oauth2_scheme),
+        db: AsyncSession = Depends(get_async_session),
+        token_service=Depends(TokenService)
 ) -> str:
     'проверка refresh токена и создание accesss'
-    await token_service.get_refresh_token_from_db_service(current_user['user_id'], db)
+
+    user_data = await token_service.check_refresh_token_service(token=token, db=db)
 
     access_token = create_access_token({
-        'sub': current_user['username'],
-        'uid': current_user['user_id']
+        'sub': user_data['username'],
+        'uid': user_data['user_id']
     })
 
     return access_token
-

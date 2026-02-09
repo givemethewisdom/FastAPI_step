@@ -13,9 +13,9 @@ from app.logger import logger
 from app.models.models import UserPass, UserTokenResponse, UserCreate, UserReturn, UserBase
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
-from auth.dependencies import get_current_user, get_access_from_refresh_token
+from auth.dependencies import get_current_user, get_access_from_refresh_token, get_user_from_token
 from auth.guard import guard
-from auth.security import make_env_builder, get_user_from_token
+from auth.security import make_env_builder
 
 router = APIRouter(
     prefix="/users",
