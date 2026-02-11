@@ -1,24 +1,26 @@
-import time
+import logging
 
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.testing.pickleable import User
 from starlette import status
 
-from DataBase.repository import check_user_exists, create_new_user
+from DataBase.repository.repository import check_user_exists, create_new_user
 from app.exceptions import CustomException
-from app.logger import logger
+
 from app.models.models import UserCreate, UserTokenResponse
 from app.services.hash_password import PasswordService
 from app.services.token_service import TokenService
 from auth.security import create_access_token, create_refresh_token
 
+logger = logging.getLogger(__name__)
 
 class UserService:
     def __init__(self):
         pass
 
-    async def create_user_with_tokens(
+    async def create_user_with_tokens_service(
             self,
             user: UserCreate,
             role: str,
@@ -47,7 +49,7 @@ class UserService:
                 await db.flush()
 
                 access_token = create_access_token({
-                    'sub': db_user.username,#sub username а не id потому уже много завязано на этот клейм
+                    'sub': db_user.username,  # sub username а не id потому уже много завязано на этот клейм
                     'uid': db_user.id
                 })
                 refresh_token = create_refresh_token({
@@ -81,11 +83,11 @@ class UserService:
             raise
 
     @staticmethod
-    async def login_user(
+    async def login_user_service(
             username: str,
             password: str,
             db: AsyncSession
-    ):
+    ) -> UserTokenResponse:
         try:
             token_service = TokenService()
             password_service = PasswordService()
@@ -144,3 +146,4 @@ class UserService:
         except HTTPException:
             # всякие HTTPException выше
             raise
+

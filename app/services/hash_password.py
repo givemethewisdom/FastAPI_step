@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from starlette import status
 
 from app.exceptions import CustomException
-from app.logger import logger
+
 
 pwd_context = CryptContext(
     schemes=["argon2"],
@@ -37,7 +37,6 @@ class PasswordService:
             return pwd_context.verify(plain_password, hashed_password)
 
         except passlib.exc.UnknownHashError:
-            logger.error('verify_password got unknown hash')
             raise CustomException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail='Incorrect username or password',

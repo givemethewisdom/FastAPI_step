@@ -1,23 +1,23 @@
-# logger.py
 import logging
 
 
 def setup_logger():
-    logger = logging.getLogger("FastAPI_logger")
-    logger.setLevel(logging.DEBUG)
+    """Настраиваем КОРНЕВОЙ логгер - работает для ВСЕХ модулей"""
+
+    # Настраиваем корневой логгер
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+
+    # Очищаем существующие обработчики
+    root_logger.handlers.clear()
 
     # Создаем консольный обработчик
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
 
-    # Задаем формат логов
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     ch.setFormatter(formatter)
 
-    # Добавляем обработчик к логгеру
-    logger.addHandler(ch)
+    root_logger.addHandler(ch)
 
-    return logger
-
-
-logger = setup_logger()
+    return root_logger

@@ -1,7 +1,9 @@
+import logging
 from dataclasses import dataclass
 from environs import Env
 
-from app.logger import logger
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

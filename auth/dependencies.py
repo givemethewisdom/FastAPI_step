@@ -1,27 +1,29 @@
-from typing import Annotated
+import logging
+from typing import Dict, Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
 from DataBase.Database import get_async_session
-from DataBase.repository import get_user
-from app.logger import logger
+from DataBase.repository.repository import get_user
+
 from app.services.token_service import TokenService
 from auth.security import create_access_token, decode_token, oauth2_scheme
 
+logger = logging.getLogger(__name__)
 
-def get_user_from_token(token: str = Depends(oauth2_scheme)) -> str:
+async def get_user_from_token(token: str = Depends(oauth2_scheme)) -> dict[str, int]:
     """DI-обёртка под FastAPI."""
-    return decode_token(token)
+    return await decode_token(token,'access')
 
 
 async def get_current_user(
-        current_username: str = Depends(get_user_from_token),
+        current_use_info: dict = Depends(get_user_from_token),
         db: AsyncSession = Depends(get_async_session)
 ) -> User:  # нужно поменять модель (это огурец)
-    user = await get_user(current_username, db)
+    user = await get_user(current_use_info['username'], db)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

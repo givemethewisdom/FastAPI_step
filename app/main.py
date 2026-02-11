@@ -16,6 +16,7 @@ from app import logger
 from app.exception_handlers import custom_exception_handler, global_exception_handler, validation_exception_handler, \
     common_exception_handler, jwt_exceptions_expired_signature_error_hendler
 from app.exceptions import CustomException, CommonException
+from app.logger import setup_logger
 from app.routing import user, todoo
 from auth.guard import guard
 
@@ -27,7 +28,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 database = Database(POSTGRES_URL)
 
-
+setup_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

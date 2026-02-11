@@ -1,3 +1,4 @@
+import logging
 import time
 
 import jwt
@@ -8,10 +9,11 @@ from fastapi.responses import JSONResponse
 from jwt import ExpiredSignatureError
 
 from app.exceptions import CustomException, CommonException
-from app.logger import logger
+
 from app.models.exception_models import CustomExceptionModel, CommonExceptionModel
 
-
+logger = logging.getLogger(__name__)
+logger.debug("This works in every module!")
 async def custom_exception_handler(request: Request, exc: CustomException):
     "обработчик ошибок пока только в get todoo by id"
     error = jsonable_encoder(

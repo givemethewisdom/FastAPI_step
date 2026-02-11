@@ -1,9 +1,11 @@
+import logging
 from enum import Enum
 from typing import Optional, Dict
 
 from fastapi import HTTPException
 
-from app.logger import logger
+logger = logging.getLogger(__name__)
+logger.debug("This works in every module!")
 
 
 class CustomException(HTTPException):

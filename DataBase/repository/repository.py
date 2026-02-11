@@ -1,18 +1,22 @@
+import logging
+
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
 from DataBase.Shemas import UserDB, TokenDB
 from app.exceptions import CustomException
-from app.logger import logger
+# from app.logger import logger
+
 from app.models.models import UserCreate
-from app.models.models_token import RefreshTokenResponse
 from app.services.hash_password import PasswordService
 
 """тут много лишнего нужно разделять (как-нибудь в другой раз)"""
+
+logger = logging.getLogger(__name__)
 
 
 async def get_user(username: str, db: AsyncSession) -> User | None:
@@ -22,6 +26,7 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     """
 
     db_user = await check_user_exists(username=username, db=db)
+    logger.debug(db_user)
 
     if not db_user:
         return None
@@ -47,6 +52,7 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
 
 async def check_user_exists(username: str, db: AsyncSession) -> UserDB | None:
     """Проверить существует ли пользователь по username и активен ли токен"""
+    # нужно будет разделить на check username(hashset) и chek if user exist
     result = await db.execute(
         select(UserDB)
         .options(selectinload(UserDB.token))
@@ -76,7 +82,7 @@ async def create_new_user(user: UserCreate, role, db: AsyncSession) -> UserDB:
 
 async def delete_refresh_token(user_id: int, db: AsyncSession) -> bool:
     """Удаляет токен по юзер ID"""
-    #просто накидал. надо доделать
+    # просто накидал. надо доделать
     await db.execute(
         delete(TokenDB).where(TokenDB.user_id == user_id)
     )
@@ -113,7 +119,7 @@ async def get_refresh_token(user_id: int, db: AsyncSession) -> TokenDB | None:
 
     except Exception as e:
         # вообще таукие ошибки глобал хендлер будет перехватывать
-        logger.error('Some server problem: %s',e)
+        logger.error('Some server problem: %s', e)
         raise CustomException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='server error',

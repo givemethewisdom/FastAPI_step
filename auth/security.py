@@ -1,7 +1,8 @@
+import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict
+from typing import Dict, Any
 
 import jwt
 from fastapi import Depends, HTTPException, Response
@@ -12,7 +13,8 @@ from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request
 
 from DataBase.sync_engine import get_user_sync
-from app.logger import logger
+logger = logging.getLogger(__name__)
+
 
 # OAuth2PasswordBearer извлекает токен из заголовка "Authorization: Bearer <token>"
 # Параметр tokenUrl указывает маршрут, по которому клиенты смогут получить токен
@@ -45,41 +47,29 @@ def create_refresh_token(data: Dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_token(token: str) -> str:
+async def decode_token(token: str,token_type:str) -> dict[str, int]:
     """Возвращает username из токена (клейм `sub`)."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if not username:
-            raise HTTPException(status_code=401, detail="Неверный токен")
-        return username
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Токен устарел")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Ошибка авторизации")
-
-
-async def decode_refresh_token(token: str) -> dict:
-    'decode token with type refresh'
-    try:
-        logger.debug('token %s',token)
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        token_type = payload.get("type")
+        curr_token_type = payload.get("type")
         user_id = payload.get("uid")
         username = payload.get("sub")
-        if token_type != "refresh":
+
+        if curr_token_type != token_type:
             raise HTTPException(401, detail="Wrong token type")
+
+        if not username or not user_id:
+            raise HTTPException(status_code=401, detail="Неверный токен")
+
         return {
             "user_id": int(user_id),
             "username": username
         }
 
     except jwt.ExpiredSignatureError:
-        raise HTTPException(401, detail="Expired token")
-
+        raise HTTPException(status_code=401, detail="Токен устарел")
     except jwt.InvalidTokenError:
-        raise HTTPException(401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Ошибка авторизации")
 
 
 
@@ -132,7 +122,7 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
             response: Response,
             _=Depends(require_access(guard, make_env_builder(resource, page))),
     ):
-        from DataBase.repository import get_user
+        from DataBase.repository.repository import get_user
 
         user = username_from_request(request)
         user_obj = get_user(user)

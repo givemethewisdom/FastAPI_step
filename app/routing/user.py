@@ -1,15 +1,17 @@
+import logging
 from typing import List
 
 from fastapi import Depends, HTTPException, APIRouter
 from rbacx.adapters.fastapi import require_access
-from sqlalchemy import select, update, delete
+from sqlalchemy import update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
 from DataBase.Database import get_async_session
 from DataBase.Shemas import UserDB
-from app.logger import logger
+from DataBase.repository.base_repository import UserDBClass
+
 from app.models.models import UserPass, UserTokenResponse, UserCreate, UserReturn, UserBase
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
@@ -22,11 +24,14 @@ router = APIRouter(
     tags=["users"]
 )
 
+logger = logging.getLogger(__name__)
+
 
 @router.get("/admin", dependencies=[
     Depends(require_access(guard, make_env_builder("view_user", "page")))
 ])
 async def admin_info(current_user: User = Depends(get_current_user)):
+    """временный ендпоинт для отладки"""
     return current_user
 
 
@@ -47,7 +52,7 @@ async def log_in(
      реализовывать смену не планирую и такие юзеры пока будут бесполезны
     """
     try:
-        user = await user_service.login_user(
+        user = await user_service.login_user_service(
             username=user.username,
             password=user.password,
             db=session
@@ -73,11 +78,7 @@ async def fast_create_admin(
         user_service: UserService = Depends(UserService),
         session: AsyncSession = Depends(get_async_session)
 ) -> UserTokenResponse:
-    new_user_info = await user_service.create_user_with_tokens(
-        user=user,
-        role='admin',
-        db=session,
-    )
+    new_user_info = await user_service.create_user_with_tokens_service(user=user, role='admin', db=session)
     # нужно потом разобратсья что делать если все сломалось после commit но до return
     return new_user_info
 
@@ -116,17 +117,8 @@ async def create_user(
     Создание нового пользователя.и добавление хеша его access токена в бд
     """
     try:
-        new_user_info = await user_service.create_user_with_tokens(
-            user=user,
-            role='user',
-            db=session
-        )
+        new_user_info = await user_service.create_user_with_tokens_service(user=user, role='user', db=session)
 
-        await token_service.save_refresh_token_in_db_service(
-            user_id=new_user_info.id,
-            token=new_user_info.refresh_token,
-            db_session=session
-        )
         return new_user_info
 
     except HTTPException:
@@ -149,35 +141,20 @@ async def get_all_users(
         limit: int = 10,
         session: AsyncSession = Depends(get_async_session),
 ):
-    try:
-        query = await session.execute(
-            select(UserDB)
-            .offset(skip)
-            .limit(limit)
-            .order_by(UserDB.id)
-        )
+    return await UserDBClass(session).get_all(skip=skip, limit=limit)
 
-        users = query.scalars().all()
 
-        return users
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'ошибка получения информации о пользователях {str(e)}'
-        )
 
 
 @router.get("/me")
 async def get_current_user_info(
-        username: str = Depends(get_user_from_token)
+        user_info: str = Depends(get_current_user)
 ):
     """
-    Получить информацию о текущем пользователе.
+        Получить информацию о текущем пользователе из любого токена.
+        можно было сделать иначе но функционал get_current_user уже был
     """
-    return {
-        "message": {username}
-    }
+    return user_info
 
 
 @router.get("/{user_id}", response_model=UserReturn)

@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -14,7 +15,7 @@ from app import config
 from app.config import get_config
 from app.exception_handlers import custom_exception_handler
 from app.exceptions import CustomException, CommonException, ErrorCode
-from app.logger import logger
+
 from app.models.models_todoo import Todoo, TodooUserId, TodooResponse
 from app.models.models_todoo_finished import Todoofinished
 
@@ -24,6 +25,8 @@ router = APIRouter(
     prefix="/todoo",
     tags=["todoo"]
 )
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/create", response_model=TodooResponse)
