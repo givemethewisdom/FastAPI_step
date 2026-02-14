@@ -6,15 +6,15 @@ from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from DataBase.repository.token_repository import TokenRepository
 from app.models.models_token import RefreshTokenResponse
-from auth.security import decode_token
+from auth.security import decode_token, REFRESH_TOKEN_EXPIRE_MINUTES
 
 logger = logging.getLogger(__name__)
 
 
 class TokenService:
-    def __init__(self):
-        "взял просто с пароля"
+    def __init__(self, token_repo: TokenRepository):
         self.pwd_context = CryptContext(
             schemes=["argon2"],
             deprecated="auto",
@@ -22,39 +22,23 @@ class TokenService:
             argon2__memory_cost=1024,
             argon2__parallelism=2,
         )
+        self.token_repo = token_repo
 
     def hash_token_service(self, token: str) -> str:
-        """Хеширование токена"""
         return self.pwd_context.hash(token)
-
-    def verify_token_service(self, token: str, token_hash: str) -> bool:
-        """Проверка токена с хешем"""
-        try:
-            return self.pwd_context.verify(token, token_hash)
-        except (ValueError, TypeError) as e:
-            # Если хеш поврежден или неверного формата
-            logger.error('verify_token_service has error: %s', e)
-            raise
 
     async def save_refresh_token_in_db_service(
             self,
             user_id: int,
             token: str,
-            db_session: AsyncSession,
     ):
-        """Сохраняет refresh token в базу данных"""
-        from DataBase.repository.repository import save_refresh_token
-        from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES
-
         token_hash = self.hash_token_service(token)
+        expire_at = datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
-        expire_at = datetime.now() + timedelta(REFRESH_TOKEN_EXPIRE_MINUTES)
-
-        return await save_refresh_token(
+        return await self.token_repo.save_refresh_token(
             user_id=user_id,
             token_hash=token_hash,
             expire_at=expire_at,
-            db=db_session
         )
 
     async def get_refresh_token_from_db_service(self, user_id: int, db_session: AsyncSession) -> RefreshTokenResponse:

@@ -50,34 +50,7 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     )
 
 
-async def check_user_exists(username: str, db: AsyncSession) -> UserDB | None:
-    """Проверить существует ли пользователь по username и активен ли токен"""
-    # нужно будет разделить на check username(hashset) и chek if user exist
-    result = await db.execute(
-        select(UserDB)
-        .options(selectinload(UserDB.token))
-        .where(UserDB.username == username)
-    )
-    user = result.scalar_one_or_none()
-    return user
 
-
-async def create_new_user(user: UserCreate, role, db: AsyncSession) -> UserDB:
-    """
-    Создать нового пользователя в БД.
-    Возвращает SQLAlchemy модель UserDB.
-    """
-    hashed_password = PasswordService.hash_password(user.password)
-    # Создаем пользователя
-    db_user = UserDB(
-        username=user.username,
-        password=hashed_password,
-        info=user.info,
-        roles=role
-    )
-
-    db.add(db_user)
-    return db_user
 
 
 async def delete_refresh_token(user_id: int, db: AsyncSession) -> bool:
@@ -89,19 +62,6 @@ async def delete_refresh_token(user_id: int, db: AsyncSession) -> bool:
     return True
 
 
-async def save_refresh_token(user_id: int, token_hash: str, expire_at, db: AsyncSession):
-    await db.execute(
-        delete(TokenDB).where(TokenDB.user_id == user_id)
-    )
-
-    db_token = TokenDB(
-        user_id=user_id,
-        refresh_token=token_hash,
-        expires_at=expire_at,
-    )
-
-    db.add(db_token)
-    return db_token
 
 
 async def get_refresh_token(user_id: int, db: AsyncSession) -> TokenDB | None:
