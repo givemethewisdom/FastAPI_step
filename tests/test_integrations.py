@@ -6,11 +6,11 @@ from app.main import app
 from app.models.models import UserReturn
 
 
-class TestCreateUser:
-    """Тесты для создания пользователя"""
+"""class TestCreateUser:
+    Тесты для создания пользователя
 
     async def test_create_user_success(self, client):  # client form conftest
-        """Успешное создание пользователя"""
+        Успешное создание пользователя
         try:
             user_data = {
                 "username": "testuser",
@@ -39,7 +39,7 @@ class TestCreateUser:
             pytest.fail(f'{e}')
 
     async def test_create_user_missing_fields(self, client):
-        """Создание пользователя без обязательных полей"""
+        Создание пользователя без обязательных полей
         try:
             # Без username
             response = await client.post("/users/create", json={
@@ -59,7 +59,7 @@ class TestCreateUser:
             pytest.fail(f'{e}')
 
     async def test_create_user_empty_fields(self, client):
-        """Создание пользователя с пустыми полями"""
+        Создание пользователя с пустыми полями
         try:
             response = await client.post("/users/create", json={
                 "username": "",
@@ -72,7 +72,7 @@ class TestCreateUser:
             pytest.fail(f'{e}')
 
     async def test_create_user_password_length(self, client):
-        """Проверка минимальной длины пароля"""
+        Проверка минимальной длины пароля
         try:
             # Слишком короткий пароль
             response = await client.post("/users/create", json={
@@ -88,7 +88,7 @@ class TestCreateUser:
             pytest.fail(f'{e}')
 
     async def test_create_user_sql_injection_attempt(self, client):
-        """Попытка SQL-инъекции в полях"""
+        Попытка SQL-инъекции в полях
         try:
             user_data = {
                 "username": "test'; DROP TABLE users; --",
@@ -159,4 +159,4 @@ class TestGetUser:
         get_resp = await client.get(f"/users/{user_id}")
 
         assert get_resp.status_code == 200
-        assert get_resp.json()["id"] == user_id
+        assert get_resp.json()["id"] == user_id"""

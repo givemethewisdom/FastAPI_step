@@ -14,7 +14,8 @@ from app.exceptions import CustomException
 from app.models.models import UserCreate
 from app.services.hash_password import PasswordService
 
-"""тут много лишнего нужно разделять (как-нибудь в другой раз)"""
+"""тут много лишнего нужно разделять (как-нибудь в другой раз)
+upd взе резделено и тут только legacy"""
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
     """
     Получение пользователя из БД, где roles хранится как строка.
     Например: "admin" или "user,admin" или "user"
+    но роль пока у всех только одна. пока пусть будет
     """
 
     db_user = await check_user_exists(username=username, db=db)
@@ -53,35 +55,4 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
 
 
 
-async def delete_refresh_token(user_id: int, db: AsyncSession) -> bool:
-    """Удаляет токен по юзер ID"""
-    # просто накидал. надо доделать
-    await db.execute(
-        delete(TokenDB).where(TokenDB.user_id == user_id)
-    )
-    return True
 
-
-
-
-async def get_refresh_token(user_id: int, db: AsyncSession) -> TokenDB | None:
-    try:
-        res = await db.execute(
-            select(TokenDB).where(TokenDB.user_id == user_id)
-        )
-
-        refresh_token = res.scalar_one_or_none()
-
-        if not refresh_token:
-            return None
-
-        return refresh_token
-
-    except Exception as e:
-        # вообще таукие ошибки глобал хендлер будет перехватывать
-        logger.error('Some server problem: %s', e)
-        raise CustomException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='server error',
-            message='Я уже не знаю что тут придумать'
-        )

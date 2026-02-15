@@ -20,7 +20,27 @@ class BaseRepository(ABC, Generic[ModelType]):
         self.model = model
         self.session = session
 
+    async def get_obj_by_id(self, obj_id: int) -> type[ModelType] | None:
+        """стандартный метод для всех get by id
+        id как собственный id записи а не с join
+        """
+        try:
+            res = await self.session.execute(
+                select(self.model).where(self.model.id == obj_id)
+            )
+
+            ret_value = res.scalar_one_or_none()
+
+            if not ret_value:
+                return None
+
+            return ret_value
+        except Exception as e:
+            logger.error(e)
+            await self._handler_500(e, "get_obj_by_id")
+
     async def get_all(self, skip: int = 0, limit: int = 10) -> list[ModelType]:
+        """стандартный метод для всех get all"""
         try:
             query = (select(self.model)
                      .offset(skip)
@@ -28,12 +48,15 @@ class BaseRepository(ABC, Generic[ModelType]):
                      .order_by(self.model.id))
 
             result = await self.session.execute(query)
+
             # без этого return result.scalars().all() Expected type 'list[ModelType]',
             # got 'Sequence[Row | RowMapping
             # | Any]' instead
             items: Sequence[ModelType] = result.scalars().all()
+
             return list(items)
         except Exception as e:
+            logger.error(e)
             await self._handler_500(e, "get_all")
 
     async def _handler_500(self, e: Exception, operation: str):
@@ -43,7 +66,3 @@ class BaseRepository(ABC, Generic[ModelType]):
             detail='server error',
             message='try again later'
         )
-
-
-
-

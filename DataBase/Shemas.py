@@ -94,6 +94,10 @@ class TokenDB(Base):
     refresh_token = Column(String(500), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=False)  # Когда токен истекает
-
+    is_active = Column(
+        Boolean,
+        nullable=False,
+        default=True
+    )
     # Связь
     user = relationship("UserDB", back_populates="token", uselist=False)  # One-to-one

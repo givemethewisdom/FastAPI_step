@@ -1,5 +1,7 @@
 import logging
+from unittest.mock import MagicMock, AsyncMock
 
+import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 
@@ -8,16 +10,20 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.logger import logger
+from DataBase.repository.token_repository import TokenRepository
+from DataBase.repository.user_repository import UserRepository
 from app.main import app
+from app.models.models import UserCreate, UserTokenResponse
+from app.services.token_service import TokenService
 
 # Тестовая БД в памяти
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
+logger = logging.getLogger(__name__)
 
-@pytest_asyncio.fixture(scope="function")
+"""@pytest_asyncio.fixture(scope="function")
 async def test_engine():
-    """Движок для тестовой БД SQLite с поддержкой Foreign Keys"""
+    Движок для тестовой БД SQLite с поддержкой Foreign Keys
     engine = create_async_engine(
         TEST_DATABASE_URL,
         echo=True,
@@ -86,4 +92,83 @@ async def client(test_session):
         yield ac
 
     # Очищаем переопределение
-    app.dependency_overrides.clear()
+    app.dependency_overrides.clear()"""
+
+
+@pytest.fixture
+def mock_session():
+    """Мок сессии БД"""
+    session = AsyncMock(spec=AsyncSession)
+    session.execute = AsyncMock()
+    session.add = MagicMock()
+    session.commit = AsyncMock()
+    session.flush = AsyncMock()
+    session.rollback = AsyncMock()
+    return session
+
+
+@pytest.fixture
+def mock_user_repo(mock_session):
+    """Мок репозитория пользователей"""
+    repo = AsyncMock(spec=UserRepository)
+    repo.session = mock_session
+    repo.get_user_with_token_by_name = AsyncMock()
+    repo.create_new_user = AsyncMock()
+    return repo
+
+
+@pytest.fixture
+def mock_token_repo(mock_session):
+    """Мок репозитория токенов"""
+    repo = AsyncMock(spec=TokenRepository)
+    repo.session = mock_session
+    repo.save_refresh_token = AsyncMock()
+    repo.get_active_token = AsyncMock()
+    repo.delete_token = AsyncMock()
+    return repo
+
+
+@pytest.fixture
+def mock_token_service(mock_token_repo):
+    """Мок сервиса токенов"""
+    service = AsyncMock(spec=TokenService)
+    service.save_refresh_token_in_db_service = AsyncMock()
+    service.hash_token_service = MagicMock(return_value="hashed_token")
+    return service
+
+
+@pytest.fixture
+def user_create_data():
+    """Тестовые данные для создания пользователя"""
+    return UserCreate(
+        username="testuser",
+        password="testpass!",
+        info="bio"
+    )
+
+
+@pytest.fixture
+def mock_db_user():
+    """Мок пользователя из БД"""
+    user = MagicMock()
+    user.id = 1
+    user.username = "testuser"
+    user.info = "bio"
+    user.roles = "user"
+    return user
+
+
+@pytest.fixture
+def user_token_response():
+    """Пример ответа с токенами"""
+    return UserTokenResponse(
+        id=1,
+        roles="user",
+        username="testuser",
+        info="bio",
+        access_token="access_token",
+        refresh_token="refresh_token"
+    )
+
+
+

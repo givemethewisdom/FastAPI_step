@@ -11,7 +11,8 @@ from DataBase.repository.repository import get_user
 
 from app.services.token_service import TokenService
 from auth.security import create_access_token, decode_token, oauth2_scheme
-
+"""устаревший depends скорее всего нужно избавляться
+используется только в about me"""
 logger = logging.getLogger(__name__)
 
 async def get_user_from_token(token: str = Depends(oauth2_scheme)) -> dict[str, int]:
@@ -32,18 +33,3 @@ async def get_current_user(
     return user
 
 
-async def get_access_from_refresh_token(
-        token: str = Depends(oauth2_scheme),
-        db: AsyncSession = Depends(get_async_session),
-        token_service=Depends(TokenService)
-) -> str:
-    'проверка refresh токена и создание accesss'
-
-    user_data = await token_service.check_refresh_token_service(token=token, db=db)
-
-    access_token = create_access_token({
-        'sub': user_data['username'],
-        'uid': user_data['user_id']
-    })
-
-    return access_token

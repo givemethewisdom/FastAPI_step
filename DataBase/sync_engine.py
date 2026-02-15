@@ -1,5 +1,5 @@
 """
-создание синхронного движка для RBAC
+создание синхронного движка для RBAC.
 """
 
 from sqlalchemy import create_engine
@@ -32,6 +32,7 @@ def get_user_sync(username: str) -> User | None:
     from sqlalchemy import select
 
     db = get_sync_db()
+
     try:
         result = db.execute(
             select(UserDB).where(UserDB.username == username)

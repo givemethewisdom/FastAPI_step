@@ -26,7 +26,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_MINUTES = 10_080
 
 
-def create_access_token(data: Dict) -> str:
+async def create_access_token(data: Dict) -> str:
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -36,7 +36,7 @@ def create_access_token(data: Dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(data: Dict) -> str:
+async def create_refresh_token(data: Dict) -> str:
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)

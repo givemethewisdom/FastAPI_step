@@ -30,6 +30,7 @@ database = Database(POSTGRES_URL)
 
 setup_logger()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -58,5 +59,3 @@ app.add_exception_handler(ExpiredSignatureError, jwt_exceptions_expired_signatur
 # Импорт роутеров
 app.include_router(user.router)
 app.include_router(todoo.router)
-
-

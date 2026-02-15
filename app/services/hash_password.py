@@ -19,11 +19,11 @@ pwd_context = CryptContext(
 
 class PasswordService:
     @staticmethod
-    def hash_password(password: str) -> str:
+    async def hash_password(password: str) -> str:
         return pwd_context.hash(password)
 
     @staticmethod
-    def verify_password(plain_password: str, hashed_password: str) -> bool:
+    async def verify_password(plain_password: str, hashed_password: str) -> bool:
         """сравнение пароля с хешем пароля"""
 
         try:
@@ -34,7 +34,7 @@ class PasswordService:
                     detail='Incorrect username or password',
                     message='на самом деле только pass но не палим перед брут форсом'
                 )
-            return pwd_context.verify(plain_password, hashed_password)
+            return bool_res
 
         except passlib.exc.UnknownHashError:
             raise CustomException(

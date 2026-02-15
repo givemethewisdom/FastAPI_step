@@ -31,8 +31,9 @@ class UserRepository(BaseRepository):
         """
         Создать нового пользователя в БД.
         Возвращает SQLAlchemy модель UserDB.
+        Не проверяет и не обрабатывает занятость username!!!
         """
-        hashed_password = PasswordService.hash_password(user.password)
+        hashed_password = await PasswordService.hash_password(user.password)
         # Создаем пользователя
         db_user = UserDB(
             username=user.username,

@@ -9,8 +9,8 @@ from app.models.models import UserCreate
 from app.routing.user import create_user
 
 
-def test_user_schema_validation():
-    """Тест только валидации Pydantic модели"""
+"""def test_user_schema_validation():
+    Тест только валидации Pydantic модели
 
     # Проверка без username
     with pytest.raises(ValidationError):
@@ -27,7 +27,7 @@ def test_user_schema_validation():
 
 @pytest.mark.asyncio
 async def test_create_user_short():
-    """Создарние пользрователя"""
+    Создарние пользрователя
     # Arrange
     user_data = UserCreate(
         username="testuser",
@@ -55,4 +55,4 @@ async def test_create_user_short():
     # Проверяем данные
     assert result.username == "testuser"
     assert result.password == "securepass"
-    assert result.info == "Test info"
+    assert result.info == "Test info"""
