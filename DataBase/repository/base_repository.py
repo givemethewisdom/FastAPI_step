@@ -27,9 +27,7 @@ class BaseRepository(ABC, Generic[ModelType]):
         """
         try:
             #orm ДОЛЖЕН БЫТЬ БЫСТРЕЕ НО на такой выборке не понятно
-            ret_value = await self.session.get(self.model, obj_id)
-
-            return ret_value
+            return await self.session.get(self.model, obj_id)
         except Exception as e:
             logger.error(e)
             await self._handler_500(e, "get_obj_by_id")
