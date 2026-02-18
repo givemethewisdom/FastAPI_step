@@ -22,5 +22,4 @@ class TodooRepository(BaseRepository):
         await self.session.flush()
         return db_todoo
 
-    #async def get_all_todoo_repo(self,skip:int, limit: int) ->List[TodooResponse]:
 

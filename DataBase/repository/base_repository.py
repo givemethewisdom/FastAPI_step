@@ -1,6 +1,7 @@
 """модуль для однотипных запросов к разным ресурсам"""
 import logging
 from abc import ABC
+from datetime import datetime
 from typing import TypeVar, Generic, Sequence, Any, Optional, List
 
 from sqlalchemy import select, delete, Result, BinaryExpression
@@ -25,14 +26,8 @@ class BaseRepository(ABC, Generic[ModelType]):
         id как собственный id записи а не с join
         """
         try:
-            res = await self.session.execute(
-                select(self.model).where(self.model.id == obj_id)
-            )
-
-            ret_value = res.scalar_one_or_none()
-
-            if not ret_value:
-                return None
+            #orm ДОЛЖЕН БЫТЬ БЫСТРЕЕ НО на такой выборке не понятно
+            ret_value = await self.session.get(self.model, obj_id)
 
             return ret_value
         except Exception as e:
