@@ -19,11 +19,11 @@ pwd_context = CryptContext(
 
 class PasswordService:
     @staticmethod
-    async def hash_password(password: str) -> str:
+    def hash_password(password: str) -> str:
         return pwd_context.hash(password)
 
     @staticmethod
-    async def verify_password(plain_password: str, hashed_password: str) -> bool:
+    def verify_password(plain_password: str, hashed_password: str) -> bool:
         """сравнение пароля с хешем пароля"""
 
         try:

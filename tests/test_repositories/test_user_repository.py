@@ -24,7 +24,7 @@ class TestUserRepository:
 
         # === ВЫПОЛНЕНИЕ ===
         repo = UserRepository(mock_session)
-        result = await repo.get_user_with_token_by_name("testuser")
+        result = await repo.get_user_with_token_by_name_repo("testuser")
 
         # === ПРОВЕРКИ ===
         assert result == mock_db_user
@@ -41,7 +41,7 @@ class TestUserRepository:
         mock_session.execute.return_value = mock_result
 
         repo = UserRepository(mock_session)
-        result = await repo.get_user_with_token_by_name("some username")
+        result = await repo.get_user_with_token_by_name_repo("some username")
 
         assert result is None
         mock_session.execute.assert_called_once()
@@ -58,7 +58,7 @@ class TestUserRepository:
         )
 
         repo = UserRepository(mock_session)
-        result = await repo.create_new_user(user_data, role="user")
+        result = await repo.create_new_user_repo(user_data, role="user")
 
         assert result.username == "testuser"
         assert result.password == "hashed_pass"
@@ -75,7 +75,7 @@ class TestUserRepository:
         )
 
         repo = UserRepository(mock_session)
-        result = await repo.create_new_user(user_data, role="admin")
+        result = await repo.create_new_user_repo(user_data, role="admin")
 
         assert result.username == "user@#123"
         assert result.roles == "admin"
@@ -90,7 +90,7 @@ class TestUserRepository:
         )
 
         repo = UserRepository(mock_session)
-        result = await repo.create_new_user(user_data, role="user")
+        result = await repo.create_new_user_repo(user_data, role="user")
 
         assert result.username == "testuser"
         assert result.info is None

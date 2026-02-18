@@ -1,16 +1,12 @@
 import logging
-import time
 
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.testing.pickleable import User
 from starlette import status
 
 from DataBase.repository.user_repository import UserRepository
 from app.exceptions import CustomException
-
-from app.models.models import UserCreate, UserTokenResponse, UserReturn
+from app.models.models import UserCreate, UserTokenResponse, UserReturn, UserUpdate
 from app.services.hash_password import PasswordService
 from app.services.token_service import TokenService
 from auth.security import create_access_token, create_refresh_token, decode_token
@@ -23,10 +19,63 @@ class UserService:
         self.user_repo = user_repo
         self.token_service = token_service
 
-    async def get_current_user_from_token(self, token: str) -> UserReturn:
+    async def get_user_serv(self, user_id: int):
+        """get user by id"""
+        user = await self.user_repo.get_obj_by_id_base_repo(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Пользователь c таким id не найден"
+            )
+        return user
+
+    async def update_userinfo_serv(self, user_id: int, new_info: UserUpdate) -> UserReturn:
+        """update username и info by id вместе с refresh токеном(admin privilege )"""
+        # нужно вводить проверку username хеш-таблицей или т.п. и избавлять от проверок
+        cur_username = await self.user_repo.get_user_with_token_by_name_repo(new_info.username)
+        if cur_username:
+            raise CustomException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail='username already exists',
+                message='try other one'
+            )
+        try:
+            user = await self.user_repo.update_userinfo_repo(user_id, new_info)
+
+            if not user:
+                raise CustomException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail='wrong user id',
+                    message='user with this id does not exist'
+                )
+
+            ref_token = create_refresh_token({
+                'sub': user.username,
+                'uid': user.id
+            })
+
+            await self.token_service.save_refresh_token_in_db_service(
+                user_id=user.id,
+                token=ref_token
+            )
+            await self.user_repo.session.commit()
+            return user
+        except HTTPException:
+            await self.user_repo.session.rollback()
+            raise
+
+        except Exception as e:
+            await self.user_repo.session.rollback()
+            logger.error("session rollback: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )
+
+    async def get_current_user_from_token_serv(self, token: str) -> UserReturn:
         """получает user info из любого токена"""
         user_info = await decode_token(token=token, token_type='access')
-        res = await self.user_repo.get_obj_by_id(user_info['user_id'])
+        res = await self.user_repo.get_obj_by_id_base_repo(user_info['user_id'])
         if not res:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -43,7 +92,7 @@ class UserService:
         Полный цикл создания пользователя с токенами.
         rollback если где-то ошибка
         """
-        if await self.user_repo.get_user_with_token_by_name(user.username):
+        if await self.user_repo.get_user_with_token_by_name_repo(user.username):
             # нужно заменить на проверку username хешсетом
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -52,15 +101,14 @@ class UserService:
 
         try:
 
-            db_user = await self.user_repo.create_new_user(user=user, role=role)
-            await self.user_repo.session.flush()
+            db_user = await self.user_repo.create_new_user_repo(user=user, role=role)
 
             # Создаём токены
-            access_token = await create_access_token({
+            access_token = create_access_token({
                 'sub': db_user.username,
                 'uid': db_user.id
             })
-            refresh_token = await create_refresh_token({
+            refresh_token = create_refresh_token({
                 'sub': db_user.username,
                 'uid': db_user.id
             })
@@ -71,6 +119,7 @@ class UserService:
             )
 
             await self.user_repo.session.commit()
+
             return UserTokenResponse(
                 id=db_user.id,
                 roles=role,
@@ -80,16 +129,9 @@ class UserService:
                 refresh_token=refresh_token
             )
 
-        except SQLAlchemyError as e:
+        except Exception as e:
+            await self.user_repo.session.rollback()
             logger.error(e)
-            raise CustomException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='server error',
-                message='это из CustomException'
-            )
-        except HTTPException:
-            # всякие HTTPException выше
-            raise
 
     async def login_user_service(
             self,
@@ -97,40 +139,41 @@ class UserService:
             password: str
     ) -> UserTokenResponse:
         pass_service = PasswordService()
-        try:
-            user = await self.user_repo.get_user_with_token_by_name(username=username)
+        user = await self.user_repo.get_user_with_token_by_name_repo(username=username)
 
-            if not user:
-                raise CustomException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail='wrong username or password',
-                    message='на самом деле только юзер но не палим перед брут форсом'
-                )
-
-            if user.token.is_active is False:
-                """по бизнес логике is_active False означает бан"""
-                raise CustomException(
-                    status_code=status.HTTP_410_GONE,
-                    detail='token is inactive',
-                    message='uк account was banned обратитесь к администратору'
-                )
-            # на самом деле можно проверять pass и токен в одной функции но пусть пока так
-            await pass_service.verify_password(password, user.password)
-
-            access_token = await create_access_token({
-                'sub': username,
-                'uid': user.id
-            })
-            logger.warning('Нужно протестить клейм uid в login_user!!!!!(я забыл что тестить)')
-            refresh_token = await create_refresh_token({
-                'sub': username,
-                'uid': user.id
-            })
-
-            await self.token_service.save_refresh_token_in_db_service(
-                user_id=user.id,
-                token=refresh_token,
+        if not user:
+            raise CustomException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='wrong username or password',
+                message='на самом деле только юзер но не палим перед брут форсом'
             )
+
+        if user.token.is_active is False:
+            """по бизнес логике is_active False означает бан"""
+            raise CustomException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='token is inactive',
+                message='uк account was banned обратитесь к администратору'
+            )
+        # на самом деле можно проверять pass и токен в одной функции но пусть пока так
+        pass_service.verify_password(password, user.password)
+
+        access_token = create_access_token({
+            'sub': username,
+            'uid': user.id
+        })
+        logger.warning('Нужно протестить клейм uid в login_user!!!!!(я забыл что тестить)')
+        refresh_token = create_refresh_token({
+            'sub': username,
+            'uid': user.id
+        })
+
+        await self.token_service.save_refresh_token_in_db_service(
+            user_id=user.id,
+            token=refresh_token,
+        )
+        try:
+            await self.user_repo.session.commit()
 
             return UserTokenResponse(
                 id=user.id,
@@ -141,13 +184,46 @@ class UserService:
                 refresh_token=refresh_token
             )
 
-        except SQLAlchemyError as e:
+        except SQLAlchemyError as e:#я не помню какие тут SQLAlchemyError но пока оставлю
             logger.error(e)
+            await self.user_repo.session.rollback()
             raise CustomException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='server error',
-                message='это из CustomException'
+                detail='SQLAlchemyError',
+                message='я не помню логику(('
             )
         except HTTPException:
+            await self.user_repo.session.rollback()
             # всякие HTTPException выше
             raise
+
+        except Exception:
+            # для любого роллбак но я пошел спать
+            await self.user_repo.session.rollback()
+            raise
+
+    async def delete_user_by_id_service(self, user_id: int) -> dict:
+        """сервисм каскадное удаление user по id"""
+
+        was_del = await self.user_repo.delete_obj_by_id_base_repo(user_id)
+
+        if was_del == 0:
+            raise CustomException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='user with this id does not exist',
+                message='make sure user exist'
+            )
+
+        try:
+
+            await self.user_repo.session.commit()
+            return {'success': 'user deleted'}
+
+        except Exception as e:
+            # Неожиданные ошибки
+            await self.user_repo.session.rollback()
+            logger.error(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error"
+            )

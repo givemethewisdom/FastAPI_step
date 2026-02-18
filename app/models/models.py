@@ -1,11 +1,12 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+from sqlalchemy import Enum
 
 from app.services.hash_password import PasswordService
 
 
 # Базовый класс для моделей пользователя
 class UserBase(BaseModel):
-    username: str
+    username: str = Field(min_length=1, max_length=10)  # для отладки 1
 
 
 # Модель для создания пользователя (входные данные)
@@ -14,11 +15,12 @@ class UserPass(UserBase):
 
     password: str = Field(min_length=3, max_length=128)
 
-    #@field_validator('password')
-    #def validate_password(cls, password):
-        #if len(password) < 3:
-            #raise ValueError('Password must be at least 3 characters')
-        #return PasswordService.hash_password(password)
+    # хеширую ну уровне сервиса но все еще думаю вернуть на уровень валидации
+    # @field_validator('password')
+    # def validate_password(cls, password):
+    # if len(password) < 3:
+    # raise ValueError('Password must be at least 3 characters')
+    # return PasswordService.hash_password(password)
 
 
 class UserCreate(UserPass):
@@ -42,3 +44,9 @@ class UserReturn(BaseModel):
 class UserTokenResponse(UserReturn):
     access_token: str
     refresh_token: str
+
+
+class UserUpdate(BaseModel):
+    """модель обновления данных пользователя (функционал админа)"""
+    username: str = Field(min_length=1, max_length=10)  # для отладки 1
+    info: str | None = Field(None, max_length=30)

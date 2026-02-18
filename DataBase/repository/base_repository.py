@@ -1,9 +1,9 @@
 """модуль для однотипных запросов к разным ресурсам"""
 import logging
 from abc import ABC
-from typing import TypeVar, Generic, Sequence
+from typing import TypeVar, Generic, Sequence, Any, Optional, List
 
-from sqlalchemy import select
+from sqlalchemy import select, delete, Result, BinaryExpression
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -20,7 +20,7 @@ class BaseRepository(ABC, Generic[ModelType]):
         self.model = model
         self.session = session
 
-    async def get_obj_by_id(self, obj_id: int) -> type[ModelType] | None:
+    async def get_obj_by_id_base_repo(self, obj_id: int) -> type[ModelType] | None:
         """стандартный метод для всех get by id
         id как собственный id записи а не с join
         """
@@ -39,13 +39,32 @@ class BaseRepository(ABC, Generic[ModelType]):
             logger.error(e)
             await self._handler_500(e, "get_obj_by_id")
 
-    async def get_all(self, skip: int = 0, limit: int = 10) -> list[ModelType]:
+    async def delete_obj_by_id_base_repo(self, obj_id: int) -> Result[Any]:
+        """стаендартный метод для все хdelete by id (id записи а не с join)"""
+        try:
+            stmt = (delete(self.model)
+                    .where(self.model.id == obj_id))
+
+            res = await self.session.execute(stmt)
+            return res.rowcount
+        except Exception as e:
+            logger.error(e)
+            await self._handler_500(e, "delete_obj_by_id")
+
+    async def get_all_base_repo(
+            self,
+            skip: int,
+            limit: int,
+            filters: Optional[List] = None
+    ) -> list[ModelType]:
         """стандартный метод для всех get all"""
         try:
-            query = (select(self.model)
-                     .offset(skip)
-                     .limit(limit)
-                     .order_by(self.model.id))
+            query = select(self.model)
+
+            if filters:
+                query = query.where(*filters)
+
+            query = query.offset(skip).limit(limit).order_by(self.model.id)
 
             result = await self.session.execute(query)
 

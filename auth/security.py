@@ -13,8 +13,8 @@ from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request
 
 from DataBase.sync_engine import get_user_sync
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 # OAuth2PasswordBearer извлекает токен из заголовка "Authorization: Bearer <token>"
 # Параметр tokenUrl указывает маршрут, по которому клиенты смогут получить токен
@@ -26,7 +26,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_MINUTES = 10_080
 
 
-async def create_access_token(data: Dict) -> str:
+def create_access_token(data: Dict) -> str:
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -36,18 +36,18 @@ async def create_access_token(data: Dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-async def create_refresh_token(data: Dict) -> str:
+def create_refresh_token(data: Dict) -> str:
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     to_encode.update({"type": 'refresh'})
-    to_encode.update({"jti": str(uuid.uuid4())})
+    to_encode.update({"jti": str(uuid.uuid4())})  # можно инвалидировать по этому клейму но у меня is_active
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-async def decode_token(token: str,token_type:str) -> dict[str, int]:
+async def decode_token(token: str, token_type: str) -> dict[str, int]:
     """Возвращает username из токена (клейм `sub`)."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -70,7 +70,6 @@ async def decode_token(token: str,token_type:str) -> dict[str, int]:
         raise HTTPException(status_code=401, detail="Токен устарел")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Ошибка авторизации")
-
 
 
 def username_from_request(request: Request) -> str:

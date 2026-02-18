@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+
 class Todoofinished(BaseModel):
     id: int
     title: str = Field(
@@ -29,7 +30,7 @@ class Todoofinished(BaseModel):
         ...,
         description="вермя в формате ISO 8604(вроде бы XD)",
         json_schema_extra={
-            'example':"2026-01-10T05:42:33.734734Z"
+            'example': "2026-01-10T05:42:33.734734Z"
         }
     )
 

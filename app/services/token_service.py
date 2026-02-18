@@ -1,3 +1,6 @@
+"""вспомогательный сервис для user_service(может каких-то еще)
+session.commit() НЕ ДЕЛАТЬ!!!"""
+
 import logging
 from datetime import timedelta, datetime, timezone
 from enum import verify
@@ -27,7 +30,7 @@ class TokenService:
         )
         self.token_repo = token_repo
 
-    async def hash_token_service(self, token: str) -> str:
+    def hash_token_service(self, token: str) -> str:
         return self.pwd_context.hash(token)
 
     async def verify_token_service(self, token, token_hash: str) -> bool:
@@ -56,7 +59,7 @@ class TokenService:
             user_id: int,
             token: str,
     ):
-        token_hash = await self.hash_token_service(token)
+        token_hash = self.hash_token_service(token)
         expire_at = datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
         return await self.token_repo.save_refresh_token(
@@ -72,7 +75,7 @@ class TokenService:
         'проверка refresh токена и создание accesss'
         user_data = await self.check_refresh_token_service(token=refresh_token)
 
-        access_token = await create_access_token({
+        access_token = create_access_token({
             'sub': user_data['username'],
             'uid': user_data['user_id']
         })
@@ -98,10 +101,13 @@ class TokenService:
 
         if token.expires_at < datetime.now(tz=timezone.utc):
             # лучше навернео сразу удалять его но пусть будет is_active = False
-            await self.token_repo.deactivate_token(user_id)
-            raise HTTPException(
+            #await self.token_repo.deactivate_token(user_id)
+            #is_active будет в случае отстронения пользователя и не даст залогиниться
+            #значит пусть просто логинится
+            raise CustomException(
                 status_code=status.HTTP_410_GONE,
-                detail="Token has expired"
+                detail="Token has expired",
+                message="u should LogIn again"
             )
 
         return token
@@ -116,3 +122,5 @@ class TokenService:
         await self.verify_token_service(token=token, token_hash=stored_token.refresh_token)
 
         return user_data
+
+

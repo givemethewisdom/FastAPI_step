@@ -19,23 +19,17 @@ class Todoo(BaseModel):
     )
 
 
-class TodooUserId(Todoo):
-    """модель для создания и обновления со всеми данными задачи кроме id
-       Id инкементируется в DB
-    """
-    user_id: int = Field(ge=1)
-
-
-class TodooResponse(TodooUserId):
+class TodooResponse(Todoo):
     """модель для овтета с id задачи датой создания и
     all_time_cost : str | None = None - всего затрачено времени
     work_time_cost : str | None = None - затрачено рабочего времени
     """
-    id:int
-    created_at : datetime = Field(
+    user_id: int = Field(ge=1)  #
+    id: int  # возвращает бд с flush
+    created_at: datetime = Field(
         ...,
         description="вермя в формате ISO 8604(вроде бы XD)",
         json_schema_extra={
-            'example':"2026-01-10T05:42:33.734734Z"
+            'example': "2026-01-10T05:42:33.734734Z"
         }
     )

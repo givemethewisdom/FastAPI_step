@@ -3,7 +3,7 @@ Only DAtabase MODELS
 """
 
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, func, Interval, Boolean, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from DataBase.Database import Base
 
@@ -20,7 +20,7 @@ class UserDB(Base):
     info = Column(String(50), nullable=True)
     roles = Column(String(50), nullable=True,server_default='user')
 
-    # Связь с todoo (активные задачи)
+    # Связь с todoo (активные задачи)(cascade для ORM)
     todoo = relationship("TodooDB", back_populates="user", cascade="all, delete")
 
     # Связь с todoofinished (завершенные задачи)
@@ -37,6 +37,7 @@ class TodooDB(Base):
     __tablename__ = "todoo"  # table todoo
 
     id = Column(Integer, primary_key=True, index=True)
+    #каскад для CORE
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
@@ -60,7 +61,8 @@ class TodooFinishedDB(Base):
     __tablename__ = "todoofinished"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    #каскад для CORE
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
 

@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, APIRouter
 from rbacx.adapters.fastapi import require_access
 from starlette import status
 
-from app.models.models import UserPass, UserTokenResponse, UserCreate, UserReturn
+from app.models.models import UserPass, UserTokenResponse, UserCreate, UserReturn, UserBase, UserUpdate
 from app.services.dependencies import UserRepoDep, UserServiceDep, GetTokenDep, \
     TokenServiceDep
 from auth.guard import guard
@@ -53,7 +53,7 @@ async def get_all_users(
         skip: int = 0,
         limit: int = 10,
 ):
-    return await user_repo.get_all(skip=skip, limit=limit)
+    return await user_repo.get_all_base_repo(skip=skip, limit=limit)
 
 
 @router.post('/refresh')
@@ -91,4 +91,26 @@ async def get_current_user_info(
     """
         Получить информацию о текущем пользователе из access токена.
     """
-    return await user_service.get_current_user_from_token(token)
+    return await user_service.get_current_user_from_token_serv(token)
+
+
+@router.get('/{user_id}', response_model=UserReturn)
+async def get_user_by_id(user_id: int, user_service: UserServiceDep):
+    """get user by id"""
+    return await user_service.get_user_serv(user_id)
+
+
+@router.post("{user_id}", dependencies=[
+    Depends(require_access(guard, make_env_builder("admin_only", "page")))
+], response_model=UserReturn)
+async def update_username(user_id: int, new_info: UserUpdate, user_service: UserServiceDep):
+    """обновление только username доступно админу"""
+    return await user_service.update_userinfo_serv(user_id, new_info)
+
+
+@router.delete("/user_id")
+async def delete_user_by_id(user_id: int, user_service: UserServiceDep) -> dict:
+    """удаления пользователя по id со всеми задачами на нем
+    для простоты отладки без доступа по RBAC
+    """
+    return await user_service.delete_user_by_id_service(user_id)
