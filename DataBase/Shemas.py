@@ -41,6 +41,7 @@ class TodooDB(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
+    comment = Column(String(500), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True),
@@ -65,6 +66,7 @@ class TodooFinishedDB(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=True)
+    comment = Column(String(500), nullable=True)
 
     created_at = Column(
         DateTime(timezone=True),

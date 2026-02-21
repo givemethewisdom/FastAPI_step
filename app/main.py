@@ -17,7 +17,7 @@ from app.exception_handlers import custom_exception_handler, global_exception_ha
     common_exception_handler, jwt_exceptions_expired_signature_error_hendler
 from app.exceptions import CustomException, CommonException
 from app.logger import setup_logger
-from app.routing import user, todoo
+from app.routing import user, todoo, fin_todoo
 from auth.guard import guard
 
 env_path = Path(__file__).parent.parent / '.env'
@@ -59,3 +59,4 @@ app.add_exception_handler(ExpiredSignatureError, jwt_exceptions_expired_signatur
 # Импорт роутеров
 app.include_router(user.router)
 app.include_router(todoo.router)
+app.include_router(fin_todoo.router)

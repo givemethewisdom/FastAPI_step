@@ -20,33 +20,14 @@ class UserRepository(BaseRepository):
         """возвращает юзера с токеном мо username"""
         result = await self.session.execute(
             select(UserDB)
-            .options(joinedload(UserDB.token))
+            .options(joinedload(UserDB.token))#токен только один
             .where(UserDB.username == username)
         )
         logger.info('still for only one token')
         user = result.scalar_one_or_none()
         return user
 
-    async def create_new_user_repo(self, user: UserCreate, role) -> UserDB:
-        """
-        Создать нового пользователя в БД.
-        Возвращает SQLAlchemy модель UserDB.
-        Не проверяет и не обрабатывает занятость username!!!
-        """
-        hashed_password = PasswordService.hash_password(user.password)#все еще хочу вернуть хеширования на уровень валидации
-        # Создаем пользователя
-        db_user = UserDB(
-            username=user.username,
-            password=hashed_password,
-            info=user.info,
-            roles=role
-        )
-
-        self.session.add(db_user)
-        await self.session.flush()
-        return db_user
-
-    async def update_userinfo_repo(self,user_id: int, new_info:UserUpdate) -> UserReturn:
+    async def update_userinfo_repo(self, user_id: int, new_info: UserUpdate) -> UserReturn:
         """обновление информации о пользователе"""
         update_dict = new_info.model_dump(exclude_unset=True, exclude_none=True)
         query = (

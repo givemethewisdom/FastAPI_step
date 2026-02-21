@@ -4,9 +4,11 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from DataBase.Database import get_async_session
+from DataBase.repository.finished_todoo_repo import FinishedTodooRepository
 from DataBase.repository.todoo_repository import TodooRepository
 from DataBase.repository.token_repository import TokenRepository
 from DataBase.repository.user_repository import UserRepository
+from app.services.fin_todoo_service import FinTodooService
 from app.services.todoo_service import TodooService
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
@@ -41,6 +43,15 @@ async def get_todoo_repo(
 TodooRepoDep = Annotated[TodooRepository, Depends(get_todoo_repo)]
 
 
+async def get_finished_todoo_repo(
+        session: AsyncSession = Depends(get_async_session)  # <- точно та же Сессия #1 (проверено по id)
+) -> FinishedTodooRepository:
+    return FinishedTodooRepository(session)
+
+
+FinTodooRepoDep = Annotated[FinishedTodooRepository, Depends(get_finished_todoo_repo)]
+
+
 # сервисы--------------------------------------------
 async def get_token_service(
         token_repo: TokenRepoDep
@@ -53,13 +64,30 @@ TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
 
 async def get_todoo_service(
         todoo_repo: TodooRepoDep,
-        user_repo:UserRepoDep#сложных сервисов не планируется и берем только РЕПО от юзера
+        user_repo: UserRepoDep,
+        f_todoo_repo: FinTodooRepoDep
 ) -> TodooService:
-    return TodooService(todoo_repo=todoo_repo,user_repo=user_repo)
+    return TodooService(
+        todoo_repo=todoo_repo,
+        user_repo=user_repo,
+        f_todoo_repo=f_todoo_repo
+    )
 
 
 TodooServiceDep = Annotated[TodooService, Depends(get_todoo_service)]
 
+
+async def get_fin_todoo_service(
+        todoo_repo: TodooRepoDep,
+        f_todoo_repo: FinTodooRepoDep
+) -> FinTodooService:
+    return FinTodooService(
+        todoo_repo=todoo_repo,
+        f_todoo_repo=f_todoo_repo
+    )
+
+
+FinTodooServiceDep = Annotated[FinTodooService, Depends(get_fin_todoo_service)]
 
 async def get_user_service(
         user_repo: UserRepoDep,  # <- UserRepository с Сессией #1

@@ -98,10 +98,15 @@ class UserService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Пользователь c таким именем уже существует"
             )
+        hashed_password = PasswordService.hash_password(user.password)  # все еще хочу вернуть хеширования на уровень валидации
 
         try:
-
-            db_user = await self.user_repo.create_new_user_repo(user=user, role=role)
+            db_user = await self.user_repo.create_obj_base_repo(
+                username=user.username,
+                password=hashed_password,
+                info=user.info,
+                roles=role
+            )
 
             # Создаём токены
             access_token = create_access_token({
@@ -207,7 +212,7 @@ class UserService:
 
         was_del = await self.user_repo.delete_obj_by_id_base_repo(user_id)
 
-        if was_del == 0:
+        if not was_del:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail='user with this id does not exist',

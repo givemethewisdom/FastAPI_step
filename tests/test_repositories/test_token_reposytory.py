@@ -58,7 +58,7 @@ class TestTokenRepository:
         mock_session.execute.return_value = mock_result
 
         repo = TokenRepository(mock_session)
-        result = await repo.get_refresh_token(user_id=1)
+        result = await repo.get_refresh_by_user_id(user_id=1)
 
         # Проверки
         assert result == expected_token
@@ -76,7 +76,7 @@ class TestTokenRepository:
         mock_session.execute.return_value = mock_result
 
         repo = TokenRepository(mock_session)
-        result = await repo.get_refresh_token(user_id=999)
+        result = await repo.get_refresh_by_user_id(user_id=999)
 
         # Проверки
         assert result is None

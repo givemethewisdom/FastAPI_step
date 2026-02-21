@@ -26,20 +26,49 @@ class BaseRepository(ABC, Generic[ModelType]):
         id как собственный id записи а не с join
         """
         try:
-            #orm ДОЛЖЕН БЫТЬ БЫСТРЕЕ НО на такой выборке не понятно
+            # orm ДОЛЖЕН БЫТЬ БЫСТРЕЕ НО на такой выборке не понятно
+            #
             return await self.session.get(self.model, obj_id)
         except Exception as e:
             logger.error(e)
             await self._handler_500(e, "get_obj_by_id")
 
-    async def delete_obj_by_id_base_repo(self, obj_id: int) -> Result[Any]:
-        """стаендартный метод для все хdelete by id (id записи а не с join)"""
+    async def create_obj_base_repo(self, **kwargs) -> ModelType:
+        """
+        Универсальный метод создания записи
+        user:
+            username
+            password
+            info
+            roles
+        todoo:
+            user_id
+            title
+            description
+            comment
+        """
+        try:
+            instance = self.model(**kwargs)
+            self.session.add(instance)
+            await self.session.flush()
+            return instance
+
+        except Exception as e:
+            logger.error(e)
+            await self._handler_500(e, "create")
+
+    async def delete_obj_by_id_base_repo(self, obj_id: int) -> ModelType | None:
+        """стандартный метод для всех delete by id (id записи а не с join)"""
         try:
             stmt = (delete(self.model)
-                    .where(self.model.id == obj_id))
+                    .where(self.model.id == obj_id)
+                    .returning(self.model))
 
             res = await self.session.execute(stmt)
-            return res.rowcount
+            obj = res.scalar_one_or_none()
+
+            return obj
+
         except Exception as e:
             logger.error(e)
             await self._handler_500(e, "delete_obj_by_id")

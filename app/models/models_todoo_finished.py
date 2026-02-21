@@ -17,6 +17,13 @@ class Todoofinished(BaseModel):
         max_length=250,
         description="описание задачи"
     )
+    comment: str | None = Field(
+        None,
+        min_length=1,
+        max_length=250,
+        description="комментарий (меняется из @router.put('/{todoo_id}')"
+    )
+
     user_id: int = Field(ge=1)
     created_at: datetime = Field(
         ...,

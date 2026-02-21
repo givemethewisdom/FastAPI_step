@@ -18,7 +18,7 @@ class TokenRepository(BaseRepository):
         await self.session.execute(
             delete(TokenDB).where(TokenDB.user_id == user_id)
         )
-
+        #нажо разделять delete и save в сервисе
         db_token = TokenDB(
             user_id=user_id,
             refresh_token=token_hash,
@@ -26,14 +26,6 @@ class TokenRepository(BaseRepository):
         )
         self.session.add(db_token)
         return db_token
-
-    async def get_refresh_token(self, user_id: int) -> TokenDB | None:
-        """Получить токен без проверок"""
-        query = select(TokenDB).where(
-            TokenDB.user_id == user_id
-        )
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
 
     async def get_refresh_by_user_id(self, user_id: int) -> TokenDB | None:
         """Получает токен по user_id"""
