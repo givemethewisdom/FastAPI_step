@@ -1,16 +1,13 @@
 import logging
-from typing import Any, Dict
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
-from app.services.token_service import TokenService
-from auth.security import create_access_token, decode_token, oauth2_scheme
 from DataBase.Database import get_async_session
 from DataBase.repository.repository import get_user
-
+from auth.security import decode_token, oauth2_scheme
 
 """устаревший depends скорее всего нужно избавляться
 используется только в about me"""

@@ -2,10 +2,9 @@ import logging
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload
 
-from app.models.models import UserBase, UserCreate, UserReturn, UserUpdate
-from app.services.hash_password import PasswordService
+from app.models.models import UserReturn, UserUpdate
 from DataBase.repository.base_repository import BaseRepository
 from DataBase.Shemas import UserDB
 

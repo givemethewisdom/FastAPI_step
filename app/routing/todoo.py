@@ -2,15 +2,11 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
-from rbacx.adapters.fastapi import require_access
+from fastapi import APIRouter, Query
 
 from app.models.models_todoo import Todoo, TodooComment, TodooResponse
 from app.models.models_todoo_finished import Todoofinished
 from app.services.dependencies import TodooServiceDep
-from auth.guard import guard
-from auth.security import make_env_builder
-
 
 router = APIRouter(prefix="/todoo", tags=["todoo"])
 

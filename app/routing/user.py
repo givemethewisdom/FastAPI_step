@@ -1,15 +1,13 @@
 import logging
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from rbacx.adapters.fastapi import require_access
-from starlette import status
 
-from app.models.models import UserBase, UserCreate, UserPass, UserReturn, UserTokenResponse, UserUpdate
+from app.models.models import UserCreate, UserPass, UserReturn, UserTokenResponse, UserUpdate
 from app.services.dependencies import GetTokenDep, TokenServiceDep, UserRepoDep, UserServiceDep
 from auth.guard import guard
 from auth.security import make_env_builder
-
 
 router = APIRouter(prefix="/users", tags=["users"])
 

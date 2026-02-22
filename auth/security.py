@@ -2,7 +2,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict
+from typing import Dict
 
 import jwt
 from fastapi import Depends, HTTPException, Response
@@ -13,7 +13,6 @@ from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request
 
 from DataBase.sync_engine import get_user_sync
-
 
 logger = logging.getLogger(__name__)
 

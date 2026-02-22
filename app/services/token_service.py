@@ -3,19 +3,16 @@ session.commit() НЕ ДЕЛАТЬ!!!"""
 
 import logging
 from datetime import datetime, timedelta, timezone
-from enum import verify
 
 import passlib
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from DataBase.repository.token_repository import TokenRepository
 from app.exceptions import CustomException
 from app.models.models_token import RefreshTokenResponse
-from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, decode_token, oauth2_scheme
-from DataBase.repository.token_repository import TokenRepository
-
+from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, decode_token
 
 logger = logging.getLogger(__name__)
 

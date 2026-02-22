@@ -1,16 +1,7 @@
 import logging
 
-from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.testing.pickleable import User
-from starlette import status
-
-from app.exceptions import CustomException
-from app.models.models import UserCreate
-from app.services.hash_password import PasswordService
-from DataBase.Shemas import TokenDB, UserDB
-
 
 # from app.logger import logger
 

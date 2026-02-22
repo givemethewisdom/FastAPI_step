@@ -3,8 +3,10 @@ line-length = 120
 target-version = ['py311']  # тут пример под питон 3.11
 extend-exclude = '''
     (venv,
+    \.venv,
     alembic,
     docker,
     .git,
+    /.git,
     __pycache__)
 '''

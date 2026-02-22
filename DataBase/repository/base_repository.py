@@ -2,16 +2,13 @@
 
 import logging
 from abc import ABC
-from datetime import datetime
-from typing import Any, Generic, List, Optional, Sequence, TypeVar
+from typing import Generic, List, Optional, Sequence, TypeVar
 
-from sqlalchemy import BinaryExpression, Result, delete, select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from app.exceptions import CustomException
-from DataBase.Shemas import TodooFinishedDB, UserDB
-
 
 logger = logging.getLogger(__name__)
 

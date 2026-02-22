@@ -1,7 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import Enum
-
-from app.services.hash_password import PasswordService
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # Базовый класс для моделей пользователя
