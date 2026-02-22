@@ -23,7 +23,8 @@ POSTGRES_URL = os.getenv("POSTGRES_URL")
 config = context.config
 
 config.set_main_option(
-    "sqlalchemy.url", "postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase?async_fallback=True"
+    "sqlalchemy.url",
+    "postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase?async_fallback=True",
 )
 
 if config.config_file_name is not None:

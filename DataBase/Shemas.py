@@ -72,7 +72,9 @@ class TodooFinishedDB(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, comment="время переносится из todoo")
 
     finished_at = Column(
-        DateTime(timezone=True), nullable=False, comment="время  устанавливается в ендпоинте(по логике такой всего 1)"
+        DateTime(timezone=True),
+        nullable=False,
+        comment="время  устанавливается в ендпоинте(по логике такой всего 1)",
     )
 
     all_time_cost = Column(

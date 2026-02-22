@@ -17,7 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 class TodooService:
-    def __init__(self, todoo_repo: TodooRepository, user_repo: UserRepository, f_todoo_repo: FinishedTodooRepository):
+    def __init__(
+        self,
+        todoo_repo: TodooRepository,
+        user_repo: UserRepository,
+        f_todoo_repo: FinishedTodooRepository,
+    ):
         self.todoo_repo = todoo_repo
         self.user_repo = user_repo
         self.f_todoo_repo = f_todoo_repo
@@ -30,11 +35,16 @@ class TodooService:
 
         if not user:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="user does not exist", message="make sure user exist"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="user does not exist",
+                message="make sure user exist",
             )
 
         res = await self.todoo_repo.create_obj_base_repo(
-            user_id=user_id, title=todoo_data.title, description=todoo_data.description, comment=todoo_data.comment
+            user_id=user_id,
+            title=todoo_data.title,
+            description=todoo_data.description,
+            comment=todoo_data.comment,
         )
 
         try:
@@ -45,7 +55,11 @@ class TodooService:
             await self.todoo_repo.session.rollback()
 
     async def get_all_todoo_serv(
-        self, skip: int, limit: int, created_after: Optional[datetime], created_before: Optional[datetime]
+        self,
+        skip: int,
+        limit: int,
+        created_after: Optional[datetime],
+        created_before: Optional[datetime],
     ):
         """get all todoo with date filter(optional)"""
 
@@ -66,7 +80,9 @@ class TodooService:
 
         if not todoo:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="todoo not found", message="make sure todoo exist"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="todoo not found",
+                message="make sure todoo exist",
             )
 
         todoo.comment = comment.comment
@@ -83,7 +99,9 @@ class TodooService:
         deleted_todo = await self.todoo_repo.delete_obj_by_id_base_repo(obj_id=todoo_id)
         if not deleted_todo:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="todoo not found", message="make sure todoo exist"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="todoo not found",
+                message="make sure todoo exist",
             )
         try:
             await self.todoo_repo.session.commit()
@@ -99,7 +117,9 @@ class TodooService:
 
         if not cur_todoo:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="todoo not found", message="make sure todoo exist"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="todoo not found",
+                message="make sure todoo exist",
             )
 
         finished_at = datetime.now(timezone.utc)

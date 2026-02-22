@@ -16,7 +16,9 @@ from DataBase.repository.user_repository import UserRepository
 
 
 # репозитории--------------------------------------------
-async def get_user_repo(db: AsyncSession = Depends(get_async_session)) -> UserRepository:  # <- Сессия #1
+async def get_user_repo(
+    db: AsyncSession = Depends(get_async_session),
+) -> UserRepository:  # <- Сессия #1
     return UserRepository(db)
 
 

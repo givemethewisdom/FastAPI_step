@@ -41,7 +41,11 @@ class TestTokenRepository:
         """Тест: токен найден по user_id"""
         # Создаём тестовый токен
         expected_token = TokenDB(
-            id=1, user_id=1, refresh_token="hashed_token_123", expires_at=datetime.now(), is_active=True
+            id=1,
+            user_id=1,
+            refresh_token="hashed_token_123",
+            expires_at=datetime.now(),
+            is_active=True,
         )
 
         # Настраиваем мок для результата запроса

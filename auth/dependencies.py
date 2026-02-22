@@ -21,7 +21,8 @@ async def get_user_from_token(token: str = Depends(oauth2_scheme)) -> dict[str, 
 
 
 async def get_current_user(
-    current_use_info: dict = Depends(get_user_from_token), db: AsyncSession = Depends(get_async_session)
+    current_use_info: dict = Depends(get_user_from_token),
+    db: AsyncSession = Depends(get_async_session),
 ) -> User:  # нужно поменять модель (это огурец)
     user = await get_user(current_use_info["username"], db)
     if user is None:

@@ -50,7 +50,9 @@ class CommonException(HTTPException):
     ):
         # detail для HTTPException, message для нашей модели
         super().__init__(
-            status_code=status_code, detail=detail or message, headers=headers  # detail должно быть строкой
+            status_code=status_code,
+            detail=detail or message,
+            headers=headers,  # detail должно быть строкой
         )
         self.message = message
         self.error_code = error_code or self._default_error_code(status_code)

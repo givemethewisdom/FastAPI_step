@@ -158,5 +158,10 @@ def mock_db_user():
 def user_token_response():
     """Пример ответа с токенами"""
     return UserTokenResponse(
-        id=1, roles="user", username="testuser", info="bio", access_token="access_token", refresh_token="refresh_token"
+        id=1,
+        roles="user",
+        username="testuser",
+        info="bio",
+        access_token="access_token",
+        refresh_token="refresh_token",
     )

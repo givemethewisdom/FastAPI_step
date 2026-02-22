@@ -27,10 +27,14 @@ async def get_all_todoo(
     skip: int = 0,
     limit: int = 10,
     created_after: Optional[datetime] = Query(
-        None, description="Созданные ПОСЛЕ", json_schema_extra={"example": "2026-01-01T00:00:00"}
+        None,
+        description="Созданные ПОСЛЕ",
+        json_schema_extra={"example": "2026-01-01T00:00:00"},
     ),
     finished_before: Optional[datetime] = Query(
-        None, description="Созданные ДО)", json_schema_extra={"example": "2027-01-01T00:00:00"}
+        None,
+        description="Созданные ДО)",
+        json_schema_extra={"example": "2027-01-01T00:00:00"},
     ),
 ):
     """

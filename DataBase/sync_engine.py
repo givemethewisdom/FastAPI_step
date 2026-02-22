@@ -47,6 +47,12 @@ def get_user_sync(username: str) -> User | None:
         else:
             roles_list = [roles_str.strip()] if roles_str.strip() else ["user"]
 
-        return User(username=db_user.username, roles=roles_list, full_name=db_user.info, email=None, disabled=False)
+        return User(
+            username=db_user.username,
+            roles=roles_list,
+            full_name=db_user.info,
+            email=None,
+            disabled=False,
+        )
     finally:
         db.close()

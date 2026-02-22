@@ -11,7 +11,11 @@ from starlette import status
 
 from app.exceptions import CustomException
 from app.models.models_token import RefreshTokenResponse
-from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, decode_token
+from auth.security import (
+    REFRESH_TOKEN_EXPIRE_MINUTES,
+    create_access_token,
+    decode_token,
+)
 from DataBase.repository.token_repository import TokenRepository
 
 
@@ -41,7 +45,9 @@ class TokenService:
             if not bool_res:
                 logger.error("Token verification failed")
                 raise CustomException(
-                    status_code=status.HTTP_400_BAD_REQUEST, detail="invalid token", message="try to log in again"
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="invalid token",
+                    message="try to log in again",
                 )
             return bool_res
 
@@ -99,7 +105,9 @@ class TokenService:
             # is_active будет в случае отстронения пользователя и не даст залогиниться
             # значит пусть просто логинится
             raise CustomException(
-                status_code=status.HTTP_410_GONE, detail="Token has expired", message="u should LogIn again"
+                status_code=status.HTTP_410_GONE,
+                detail="Token has expired",
+                message="u should LogIn again",
             )
 
         return token

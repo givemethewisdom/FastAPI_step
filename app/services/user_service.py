@@ -24,7 +24,10 @@ class UserService:
         """get user by id"""
         user = await self.user_repo.get_obj_by_id_base_repo(user_id)
         if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь c таким id не найден")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Пользователь c таким id не найден",
+            )
         return user
 
     async def update_userinfo_serv(self, user_id: int, new_info: UserUpdate) -> UserReturn:
@@ -33,7 +36,9 @@ class UserService:
         cur_username = await self.user_repo.get_user_with_token_by_name_repo(new_info.username)
         if cur_username:
             raise CustomException(
-                status_code=status.HTTP_409_CONFLICT, detail="username already exists", message="try other one"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="username already exists",
+                message="try other one",
             )
         try:
             user = await self.user_repo.update_userinfo_repo(user_id, new_info)
@@ -57,7 +62,10 @@ class UserService:
         except Exception as e:
             await self.user_repo.session.rollback()
             logger.error("session rollback: %s", e)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error",
+            )
 
     async def get_current_user_from_token_serv(self, token: str) -> UserReturn:
         """получает user info из любого токена"""
@@ -75,7 +83,8 @@ class UserService:
         if await self.user_repo.get_user_with_token_by_name_repo(user.username):
             # нужно заменить на проверку username хешсетом
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Пользователь c таким именем уже существует"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Пользователь c таким именем уже существует",
             )
         hashed_password = PasswordService.hash_password(
             user.password
@@ -83,7 +92,10 @@ class UserService:
 
         try:
             db_user = await self.user_repo.create_obj_base_repo(
-                username=user.username, password=hashed_password, info=user.info, roles=role
+                username=user.username,
+                password=hashed_password,
+                info=user.info,
+                roles=role,
             )
 
             # Создаём токены
@@ -187,4 +199,7 @@ class UserService:
             # Неожиданные ошибки
             await self.user_repo.session.rollback()
             logger.error(e)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error",
+            )

@@ -96,5 +96,7 @@ class BaseRepository(ABC, Generic[ModelType]):
     async def _handler_500(self, e: Exception, operation: str):
         logger.error("Error in %s.%s: %s", self.model.__name__, operation, e)
         raise CustomException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="server error", message="try again later"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="server error",
+            message="try again later",
         )

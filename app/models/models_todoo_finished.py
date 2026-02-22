@@ -8,7 +8,10 @@ class Todoofinished(BaseModel):
     title: str = Field(min_length=1, max_length=100, description="Заголовок задачи")
     description: str | None = Field(None, min_length=1, max_length=250, description="описание задачи")
     comment: str | None = Field(
-        None, min_length=1, max_length=250, description="комментарий (меняется из @router.put('/{todoo_id}')"
+        None,
+        min_length=1,
+        max_length=250,
+        description="комментарий (меняется из @router.put('/{todoo_id}')",
     )
 
     user_id: int = Field(ge=1)

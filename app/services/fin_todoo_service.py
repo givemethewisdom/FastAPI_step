@@ -16,7 +16,11 @@ class FinTodooService:
         self.f_todoo_repo = f_todoo_repo
 
     async def get_all_fin_todoo_serv(
-        self, skip: int, limit: int, created_after: Optional[datetime], finished_before: Optional[datetime]
+        self,
+        skip: int,
+        limit: int,
+        created_after: Optional[datetime],
+        finished_before: Optional[datetime],
     ):
         """get all todoo with date filter(optional)"""
 
@@ -57,5 +61,5 @@ class FinTodooService:
             "total_time_hours": total_time / 3600,  # в часах даже лишнее(наверное)
             "avg_time_on_complete": avg_time,
             "avg_time_on_complete_hours": avg_time / 3600 if avg_time > 0 else 0,
-            "completion_rate": f"{(completed_count / all_tasks * 100):.1f}%" if all_tasks > 0 else "0%",
+            "completion_rate": (f"{(completed_count / all_tasks * 100):.1f}%" if all_tasks > 0 else "0%"),
         }
