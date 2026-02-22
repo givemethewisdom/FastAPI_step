@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
+from auth.security import decode_token, oauth2_scheme
 from DataBase.Database import get_async_session
 from DataBase.repository.repository import get_user
-from auth.security import decode_token, oauth2_scheme
+
 
 """устаревший depends скорее всего нужно избавляться
 используется только в about me"""

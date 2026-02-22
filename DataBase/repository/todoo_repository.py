@@ -2,8 +2,9 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from DataBase.Shemas import TodooDB
 from DataBase.repository.base_repository import BaseRepository
+from DataBase.Shemas import TodooDB
+
 
 logger = logging.getLogger(__name__)
 

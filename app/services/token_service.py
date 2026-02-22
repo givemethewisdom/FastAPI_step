@@ -9,10 +9,11 @@ from fastapi import HTTPException
 from passlib.context import CryptContext
 from starlette import status
 
-from DataBase.repository.token_repository import TokenRepository
 from app.exceptions import CustomException
 from app.models.models_token import RefreshTokenResponse
 from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, decode_token
+from DataBase.repository.token_repository import TokenRepository
+
 
 logger = logging.getLogger(__name__)
 

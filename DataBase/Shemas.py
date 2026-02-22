@@ -2,8 +2,8 @@
 Only DAtabase MODELS
 """
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Interval, String, Table, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy.orm import relationship
 
 from DataBase.Database import Base
 

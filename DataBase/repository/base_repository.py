@@ -10,6 +10,7 @@ from starlette import status
 
 from app.exceptions import CustomException
 
+
 logger = logging.getLogger(__name__)
 
 ModelType = TypeVar("ModelType")

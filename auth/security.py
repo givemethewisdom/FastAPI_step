@@ -14,6 +14,7 @@ from starlette.requests import Request
 
 from DataBase.sync_engine import get_user_sync
 
+
 logger = logging.getLogger(__name__)
 
 # OAuth2PasswordBearer извлекает токен из заголовка "Authorization: Bearer <token>"

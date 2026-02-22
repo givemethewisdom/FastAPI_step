@@ -9,6 +9,7 @@ from app.services.dependencies import GetTokenDep, TokenServiceDep, UserRepoDep,
 from auth.guard import guard
 from auth.security import make_env_builder
 
+
 router = APIRouter(prefix="/users", tags=["users"])
 
 logger = logging.getLogger(__name__)
