@@ -16,11 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/analytics", response_model=dict)
-async def get_analitics():
+async def get_analytics(fin_todoo_service: FinTodooServiceDep):
     """
     Метод для получения аналитики по задачам
     """
-    pass
+    return await fin_todoo_service.get_analytics_serv()
+
 
 @router.get("/get_all", response_model=List[Todoofinished])
 async def get_all_todoo(
@@ -59,4 +60,3 @@ async def get_all_todoo(
         created_after,
         finished_before
     )
-

@@ -1,7 +1,7 @@
-a = False
-b = None
+def a():
+    return []
 
-if  a == False:
-    print("a is false")
-if b == False:
-    print("b is false")
+
+b = a
+if not len(b):
+    print(2)
