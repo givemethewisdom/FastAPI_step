@@ -1,10 +1,11 @@
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 from sqlalchemy import select
 from sqlalchemy.sql import Select
 
-from DataBase.repository.user_repository import UserRepository
 from app.models.models import UserCreate
+from DataBase.repository.user_repository import UserRepository
 
 
 @pytest.mark.asyncio
@@ -32,7 +33,7 @@ class TestUserRepository:
 
         # Проверяем, что использовался joinedload
         call_args = mock_session.execute.call_args[0][0]
-        assert "left outer join" in str(call_args).lower()#алхимия конвертирует joinedload в left outer join
+        assert "left outer join" in str(call_args).lower()  # алхимия конвертирует joinedload в left outer join
 
     async def test_get_user_with_token_by_name_not_found(self, mock_session):
         """Тест: пользователь не найден"""
@@ -46,16 +47,12 @@ class TestUserRepository:
         assert result is None
         mock_session.execute.assert_called_once()
 
-    @patch('DataBase.repository.user_repository.PasswordService')
+    @patch("DataBase.repository.user_repository.PasswordService")
     async def test_create_new_user_success(self, mock_password_service, mock_session):
         """Тест: успешное создание пользователя"""
         mock_password_service.hash_password.return_value = "hashed_pass"
 
-        user_data = UserCreate(
-            username="testuser",
-            password="testpass!",
-            info="some info"
-        )
+        user_data = UserCreate(username="testuser", password="testpass!", info="some info")
 
         repo = UserRepository(mock_session)
         result = await repo.create_new_user_repo(user_data, role="user")
@@ -68,11 +65,7 @@ class TestUserRepository:
 
     async def test_create_new_user_with_special_chars(self, mock_session):
         """Тест: создание пользователя со спецсимволами"""
-        user_data = UserCreate(
-            username="user@#123",
-            password="pass123",
-            info="special info"
-        )
+        user_data = UserCreate(username="user@#123", password="pass123", info="special info")
 
         repo = UserRepository(mock_session)
         result = await repo.create_new_user_repo(user_data, role="admin")
@@ -85,7 +78,7 @@ class TestUserRepository:
         """Тест: создание пользователя без info"""
         user_data = UserCreate(
             username="testuser",
-            password="pass123"
+            password="pass123",
             # info не указано
         )
 
@@ -94,4 +87,3 @@ class TestUserRepository:
 
         assert result.username == "testuser"
         assert result.info is None
-

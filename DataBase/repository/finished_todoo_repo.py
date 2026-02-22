@@ -1,10 +1,11 @@
 import logging
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from DataBase.Shemas import TodooFinishedDB
 from DataBase.repository.base_repository import BaseRepository
+from DataBase.Shemas import TodooFinishedDB
+
 
 logger = logging.getLogger(__name__)
 

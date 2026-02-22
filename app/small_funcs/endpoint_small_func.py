@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta, time
+from datetime import datetime, time, timedelta
 
 
 def calculate_work_time(
-        start_dt: datetime,
-        end_dt: datetime,
-        work_start: time = time(8, 0),  # 8:00
-        work_end: time = time(17, 0),  # 17:00
-        work_days: set = {0, 1, 2, 3, 4}  # пн-пт (0-пн, 6-вс)
+    start_dt: datetime,
+    end_dt: datetime,
+    work_start: time = time(8, 0),  # 8:00
+    work_end: time = time(17, 0),  # 17:00
+    work_days: set = {0, 1, 2, 3, 4},  # пн-пт (0-пн, 6-вс)
 ) -> timedelta:
     """
     Рассчитывает рабочее время между двумя датами.

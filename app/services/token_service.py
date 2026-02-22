@@ -2,19 +2,20 @@
 session.commit() НЕ ДЕЛАТЬ!!!"""
 
 import logging
-from datetime import timedelta, datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import verify
 
 import passlib
-from fastapi import HTTPException, Depends
+from fastapi import Depends, HTTPException
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from DataBase.repository.token_repository import TokenRepository
 from app.exceptions import CustomException
 from app.models.models_token import RefreshTokenResponse
-from auth.security import decode_token, REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, oauth2_scheme
+from auth.security import REFRESH_TOKEN_EXPIRE_MINUTES, create_access_token, decode_token, oauth2_scheme
+from DataBase.repository.token_repository import TokenRepository
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ class TokenService:
         self.token_repo = token_repo
 
     def hash_token_service(self, token: str) -> str:
-        #нарушение DRY как-нибудь потом исправлю
+        # нарушение DRY как-нибудь потом исправлю
         return self.pwd_context.hash(token)
 
     async def verify_token_service(self, token, token_hash: str) -> bool:
@@ -40,32 +41,31 @@ class TokenService:
         try:
             bool_res = self.pwd_context.verify(token, token_hash)
             if not bool_res:
-                logger.error('Token verification failed')
+                logger.error("Token verification failed")
                 raise CustomException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail='invalid token',
-                    message='try to log in again'
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="invalid token", message="try to log in again"
                 )
             return bool_res
 
         except passlib.exc.UnknownHashError:
             raise CustomException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Incorrect username or password',
-                message='это поле вообще просто атк придумал не знаю что сюда писать'
+                detail="Incorrect username or password",
+                message="это поле вообще просто атк придумал не знаю что сюда писать",
             )
 
     async def save_refresh_token_in_db_service(
-            self,
-            user_id: int,
-            token: str,
+        self,
+        user_id: int,
+        token: str,
     ):
+        """сохранить тоекен в БД (без комита)"""
         del_token = await self.token_repo.del_ref_token_by_user_id_repo(user_id)
         if not del_token:
             raise CustomException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail='user have no any tokens',
-                message='make sure user have tokens'
+                detail="user have no any tokens",
+                message="make sure user have tokens",
             )
         token_hash = self.hash_token_service(token)
         expire_at = datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
@@ -76,17 +76,11 @@ class TokenService:
             expires_at=expire_at,
         )
 
-    async def make_token_access_via_refresh_service(
-            self,
-            refresh_token: str
-    ) -> str:
-        'проверка refresh токена и создание accesss'
+    async def make_token_access_via_refresh_service(self, refresh_token: str) -> str:
+        "проверка refresh токена и создание accesss"
         user_data = await self.check_refresh_token_service(token=refresh_token)
 
-        access_token = create_access_token({
-            'sub': user_data['username'],
-            'uid': user_data['user_id']
-        })
+        access_token = create_access_token({"sub": user_data["username"], "uid": user_data["user_id"]})
 
         return access_token
 
@@ -96,39 +90,26 @@ class TokenService:
         token = await self.token_repo.get_refresh_by_user_id_repo(user_id=user_id)
 
         if not token:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User have no any tokens"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User have no any tokens")
 
         if not token.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_410_GONE,
-                detail="Token is inactive"
-            )
+            raise HTTPException(status_code=status.HTTP_410_GONE, detail="Token is inactive")
 
         if token.expires_at < datetime.now(tz=timezone.utc):
             # лучше навернео сразу удалять его но пусть будет is_active = False
-            #await self.token_repo.deactivate_token(user_id)
-            #is_active будет в случае отстронения пользователя и не даст залогиниться
-            #значит пусть просто логинится
+            # await self.token_repo.deactivate_token(user_id)
+            # is_active будет в случае отстронения пользователя и не даст залогиниться
+            # значит пусть просто логинится
             raise CustomException(
-                status_code=status.HTTP_410_GONE,
-                detail="Token has expired",
-                message="u should LogIn again"
+                status_code=status.HTTP_410_GONE, detail="Token has expired", message="u should LogIn again"
             )
 
         return token
 
-    async def check_refresh_token_service(
-            self,
-            token: str
-    ) -> dict:
+    async def check_refresh_token_service(self, token: str) -> dict:
         "проверяет валидность токена по типу refresh, отдает user_id: int(user_id),usernam: username"
-        user_data = await decode_token(token=token, token_type='refresh')
-        stored_token = await self.get_refresh_token_from_db_service(user_data['user_id'])
+        user_data = await decode_token(token=token, token_type="refresh")
+        stored_token = await self.get_refresh_token_from_db_service(user_data["user_id"])
         await self.verify_token_service(token=token, token_hash=stored_token.refresh_token)
 
         return user_data
-
-

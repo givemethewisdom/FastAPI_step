@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from typing import Type
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from DataBase.Shemas import TokenDB
+from app.models.models import UserCreate
 from DataBase.repository.token_repository import TokenRepository
 from DataBase.repository.user_repository import UserRepository
-from app.models.models import UserCreate
+from DataBase.Shemas import TokenDB
 
 
 @pytest.mark.asyncio
@@ -18,11 +18,7 @@ class TestTokenRepository:
         expires_at = datetime.now() + timedelta(minutes=10_000)
 
         repo = TokenRepository(mock_session)
-        result = await repo.save_refresh_token(
-            user_id=1,
-            token_hash='hashed_token',
-            expire_at=expires_at
-        )
+        result = await repo.save_refresh_token(user_id=1, token_hash="hashed_token", expire_at=expires_at)
 
         # Проверка поведения
         mock_session.execute.assert_called_once()
@@ -31,25 +27,21 @@ class TestTokenRepository:
 
         # Проверка переданных значений
         assert result.user_id == 1
-        assert result.refresh_token == 'hashed_token'
+        assert result.refresh_token == "hashed_token"
         assert result.expires_at == expires_at
 
         # Проверка значений по умолчанию
-        assert hasattr(result, 'is_active')
+        assert hasattr(result, "is_active")
 
         # Проверка наличия полей (не конкретных значений)
-        assert hasattr(result, 'id')
-        assert hasattr(result, 'created_at')
+        assert hasattr(result, "id")
+        assert hasattr(result, "created_at")
 
     async def test_get_refresh_token_found(self, mock_session):
         """Тест: токен найден по user_id"""
         # Создаём тестовый токен
         expected_token = TokenDB(
-            id=1,
-            user_id=1,
-            refresh_token="hashed_token_123",
-            expires_at=datetime.now(),
-            is_active=True
+            id=1, user_id=1, refresh_token="hashed_token_123", expires_at=datetime.now(), is_active=True
         )
 
         # Настраиваем мок для результата запроса

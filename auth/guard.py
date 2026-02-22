@@ -4,9 +4,12 @@
 Сделал его так как вынес функцию require_access_with_rate_limit в sequrity
  и теперь guard нужен и там и в ендпоинте
 """
+
 import logging
+
 from rbacx import Guard
 from rbacx.policy.loader import FilePolicySource, HotReloader
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,7 @@ reloader = HotReloader(
     FilePolicySource("policy.json"),
     initial_load=True,  # сразу загрузить при старте
 )
+
 
 def init_guard():
     """Инициализирует guard с загрузкой политик из файла"""
@@ -33,7 +37,10 @@ def init_guard():
         logger.error(f" Ошибка инициализации guard: {e}")
         raise
 
+
 def get_guard():
     """Получить глобальный экземпляр guard"""
     return guard
+
+
 init_guard()

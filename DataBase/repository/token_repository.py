@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from DataBase.Shemas import TokenDB
 from DataBase.repository.base_repository import BaseRepository
+from DataBase.Shemas import TokenDB
 
 
 class TokenRepository(BaseRepository):
@@ -15,9 +15,7 @@ class TokenRepository(BaseRepository):
 
     async def del_ref_token_by_user_id_repo(self, user_id: int) -> TokenDB | None:
         """удалить токен по user id"""
-        obj = await self.session.execute(
-            delete(TokenDB).where(TokenDB.user_id == user_id).returning(TokenDB)
-        )
+        obj = await self.session.execute(delete(TokenDB).where(TokenDB.user_id == user_id).returning(TokenDB))
         res = obj.scalar_one_or_none()
         return res
 
@@ -29,20 +27,12 @@ class TokenRepository(BaseRepository):
 
     async def delete_refresh_token_repo(self, token_hash: str) -> None:
         """Удалить конкретный токен (скорее всего не нужно)"""
-        await self.session.execute(
-            delete(TokenDB).where(TokenDB.refresh_token == token_hash)
-        )
+        await self.session.execute(delete(TokenDB).where(TokenDB.refresh_token == token_hash))
 
     async def delete_all_user_tokens_repo(self, user_id: int) -> None:
         """Удалить все токены пользователя (скорее всего не нужно)"""
-        await self.session.execute(
-            delete(TokenDB).where(TokenDB.user_id == user_id)
-        )
+        await self.session.execute(delete(TokenDB).where(TokenDB.user_id == user_id))
 
     async def deactivate_token_repo(self, user_id: int) -> None:
         """проверка в сервисе после flush!!!"""
-        await self.session.execute(
-            update(TokenDB)
-            .where(TokenDB.user_id == user_id)
-            .values(is_active=False)
-        )
+        await self.session.execute(update(TokenDB).where(TokenDB.user_id == user_id).values(is_active=False))

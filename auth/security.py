@@ -2,17 +2,18 @@ import logging
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Any
+from typing import Any, Dict
 
 import jwt
 from fastapi import Depends, HTTPException, Response
 from fastapi.security import OAuth2PasswordBearer
 from fastapi_limiter.depends import RateLimiter
-from rbacx import Subject, Action, Resource, Context
+from rbacx import Action, Context, Resource, Subject
 from rbacx.adapters.fastapi import require_access
 from starlette.requests import Request
 
 from DataBase.sync_engine import get_user_sync
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def create_access_token(data: Dict) -> str:
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    to_encode.update({"type": 'access'})
+    to_encode.update({"type": "access"})
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -41,7 +42,7 @@ def create_refresh_token(data: Dict) -> str:
 
     expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    to_encode.update({"type": 'refresh'})
+    to_encode.update({"type": "refresh"})
     to_encode.update({"jti": str(uuid.uuid4())})  # можно инвалидировать по этому клейму но у меня is_active
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -61,10 +62,7 @@ async def decode_token(token: str, token_type: str) -> dict[str, int]:
         if not username or not user_id:
             raise HTTPException(status_code=401, detail="Неверный токен")
 
-        return {
-            "user_id": int(user_id),
-            "username": username
-        }
+        return {"user_id": int(user_id), "username": username}
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Токен устарел")
@@ -96,10 +94,7 @@ def username_from_request(request: Request) -> str:
         token_type = payload.get("type")
         if token_type != "access":
             logger.error("requaired access token got %s", token_type)
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid token"
-            )
+            raise HTTPException(status_code=401, detail="Invalid token")
 
         return username
 
@@ -113,25 +108,24 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
     но ессли будут то роль выше в иерархии должна быть левее (индекс ноль)
     тут проверяется роль на первом месте
     """
-    logger.info('если видно это сообщение то лимиты в require_access_with_rate_limit '
-                'все еще тестовые')
+    logger.info("если видно это сообщение то лимиты в require_access_with_rate_limit " "все еще тестовые")
 
     async def dependency(
-            request: Request,
-            response: Response,
-            _=Depends(require_access(guard, make_env_builder(resource, page))),
+        request: Request,
+        response: Response,
+        _=Depends(require_access(guard, make_env_builder(resource, page))),
     ):
         from DataBase.repository.repository import get_user
 
         user = username_from_request(request)
         user_obj = get_user(user)
-        role = getattr(user_obj, 'roles', 'common role')
+        role = getattr(user_obj, "roles", "common role")
         # для дебага маленькие значения
-        if role[0] == 'admin':
+        if role[0] == "admin":
             limiter = RateLimiter(times=10, seconds=10)
-        elif role[0] == 'user':
+        elif role[0] == "user":
             limiter = RateLimiter(times=5, seconds=10)
-        elif role[0] == 'guest':
+        elif role[0] == "guest":
             limiter = RateLimiter(times=2, seconds=10)
         else:
             limiter = RateLimiter(times=1, seconds=10)
@@ -145,6 +139,7 @@ def require_access_with_rate_limit(guard, resource: str, page: str):
 def make_env_builder(action_name: str, resource_type: str):
     """
     Синхронная версия с синхронной БД.
+    будут проблемы
     """
 
     def build_env(request: Request):

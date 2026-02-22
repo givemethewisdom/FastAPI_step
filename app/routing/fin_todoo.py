@@ -7,10 +7,8 @@ from fastapi import APIRouter, Query
 from app.models.models_todoo_finished import Todoofinished
 from app.services.dependencies import FinTodooServiceDep
 
-router = APIRouter(
-    prefix="/finished_todoo",
-    tags=["fin_todoo"]
-)
+
+router = APIRouter(prefix="/finished_todoo", tags=["fin_todoo"])
 
 logger = logging.getLogger(__name__)
 
@@ -25,24 +23,15 @@ async def get_analytics(fin_todoo_service: FinTodooServiceDep):
 
 @router.get("/get_all", response_model=List[Todoofinished])
 async def get_all_todoo(
-        fin_todoo_service: FinTodooServiceDep,
-        skip: int = 0,
-        limit: int = 10,
-        created_after: Optional[datetime] = Query(
-            None,
-            description="Созданные ПОСЛЕ",
-            json_schema_extra={
-                'example': '2026-01-01T00:00:00'
-            }
-
-        ),
-        finished_before: Optional[datetime] = Query(
-            None,
-            description="Созданные ДО)",
-            json_schema_extra={
-                'example': '2027-01-01T00:00:00'
-            }
-        )
+    fin_todoo_service: FinTodooServiceDep,
+    skip: int = 0,
+    limit: int = 10,
+    created_after: Optional[datetime] = Query(
+        None, description="Созданные ПОСЛЕ", json_schema_extra={"example": "2026-01-01T00:00:00"}
+    ),
+    finished_before: Optional[datetime] = Query(
+        None, description="Созданные ДО)", json_schema_extra={"example": "2027-01-01T00:00:00"}
+    ),
 ):
     """
     Получение информации обо всех не завершенных задачах.
@@ -54,9 +43,4 @@ async def get_all_todoo(
     - Данные о задачах в формате TodooResponse
     - пустой список если нет задач
     """
-    return await fin_todoo_service.get_all_fin_todoo_serv(
-        skip,
-        limit,
-        created_after,
-        finished_before
-    )
+    return await fin_todoo_service.get_all_fin_todoo_serv(skip, limit, created_after, finished_before)

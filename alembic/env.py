@@ -11,10 +11,10 @@ from logging.config import fileConfig
 import sys
 import os
 
-#вот без этого from DataBase.Database import Base отказывается работать
+# вот без этого from DataBase.Database import Base отказывается работать
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from DataBase.Database import Base
-from DataBase.Shemas import TodooDB #noqa
+from DataBase.Shemas import TodooDB  # noqa
 
 load_dotenv()
 
@@ -22,12 +22,15 @@ load_dotenv()
 POSTGRES_URL = os.getenv("POSTGRES_URL")
 config = context.config
 
-config.set_main_option('sqlalchemy.url',"postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase?async_fallback=True")
+config.set_main_option(
+    "sqlalchemy.url", "postgresql+asyncpg://myuser:mypassword@localhost:5432/mydatabase?async_fallback=True"
+)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -67,9 +70,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

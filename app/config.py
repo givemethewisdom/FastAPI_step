@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+
 from environs import Env
 
 
@@ -26,13 +27,13 @@ def load_config(path: str = None) -> Config:
     global _config
     if _config is None:
         env = Env()
-        logger.info('Loading config from environment')
+        logger.info("Loading config from environment")
         env.read_env(path)
 
         _config = Config(
             db=DatabaseConfig(database_url=env("DATABASE_URL")),
             secret_key=env("SECRET_KEY"),
-            debug=env.bool("DEBUG", default=False)
+            debug=env.bool("DEBUG", default=False),
         )
     return _config
 

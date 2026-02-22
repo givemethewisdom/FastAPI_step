@@ -1,20 +1,20 @@
 import logging
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy import text
-
-from DataBase.Database import Base, get_async_session
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
-from DataBase.repository.token_repository import TokenRepository
-from DataBase.repository.user_repository import UserRepository
 from app.main import app
 from app.models.models import UserCreate, UserTokenResponse
 from app.services.token_service import TokenService
+from DataBase.Database import Base, get_async_session
+from DataBase.repository.token_repository import TokenRepository
+from DataBase.repository.user_repository import UserRepository
+
 
 # Тестовая БД в памяти
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -140,11 +140,7 @@ def mock_token_service(mock_token_repo):
 @pytest.fixture
 def user_create_data():
     """Тестовые данные для создания пользователя"""
-    return UserCreate(
-        username="testuser",
-        password="testpass!",
-        info="bio"
-    )
+    return UserCreate(username="testuser", password="testpass!", info="bio")
 
 
 @pytest.fixture
@@ -162,13 +158,5 @@ def mock_db_user():
 def user_token_response():
     """Пример ответа с токенами"""
     return UserTokenResponse(
-        id=1,
-        roles="user",
-        username="testuser",
-        info="bio",
-        access_token="access_token",
-        refresh_token="refresh_token"
+        id=1, roles="user", username="testuser", info="bio", access_token="access_token", refresh_token="refresh_token"
     )
-
-
-

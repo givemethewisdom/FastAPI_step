@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import Enum
 
 from app.services.hash_password import PasswordService
@@ -25,6 +25,7 @@ class UserPass(UserBase):
 
 class UserCreate(UserPass):
     "модель для создания нового юзера"
+
     info: str | None = Field(None, max_length=30)
     model_config = ConfigDict(from_attributes=True)
 
@@ -35,6 +36,7 @@ class UserReturn(BaseModel):
     Модель для сериализации данных пользователя.
     Включает технические поля из БД (id) и исключает чувствительные данные.
     """
+
     username: str
     info: str | None = Field(None, max_length=30)
     id: int  # ID всегда присфутствует после сохранения в БД
@@ -48,5 +50,6 @@ class UserTokenResponse(UserReturn):
 
 class UserUpdate(BaseModel):
     """модель обновления данных пользователя (функционал админа)"""
+
     username: str = Field(min_length=1, max_length=10)  # для отладки 1
     info: str | None = Field(None, max_length=30)

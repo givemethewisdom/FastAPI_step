@@ -2,13 +2,14 @@
 создание синхронного движка для RBAC.
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 import os
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.testing.pickleable import User
 
 from DataBase.Shemas import UserDB
+
 
 # Синхронный URL (заменяем asyncpg на psycopg2)
 POSTGRES_URL_SYNC = os.getenv("POSTGRES_URL").replace("+asyncpg", "+psycopg2")
@@ -34,9 +35,7 @@ def get_user_sync(username: str) -> User | None:
     db = get_sync_db()
 
     try:
-        result = db.execute(
-            select(UserDB).where(UserDB.username == username)
-        )
+        result = db.execute(select(UserDB).where(UserDB.username == username))
         db_user = result.scalar_one_or_none()
 
         if not db_user:
@@ -48,13 +47,6 @@ def get_user_sync(username: str) -> User | None:
         else:
             roles_list = [roles_str.strip()] if roles_str.strip() else ["user"]
 
-        return User(
-            username=db_user.username,
-            roles=roles_list,
-            full_name=db_user.info,
-            email=None,
-            disabled=False
-        )
+        return User(username=db_user.username, roles=roles_list, full_name=db_user.info, email=None, disabled=False)
     finally:
         db.close()
-

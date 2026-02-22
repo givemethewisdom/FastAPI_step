@@ -1,18 +1,19 @@
 import logging
 
-from sqlalchemy import select, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 from sqlalchemy.testing.pickleable import User
 from starlette import status
 
-from DataBase.Shemas import UserDB, TokenDB
 from app.exceptions import CustomException
-# from app.logger import logger
-
 from app.models.models import UserCreate
 from app.services.hash_password import PasswordService
+from DataBase.Shemas import TokenDB, UserDB
+
+
+# from app.logger import logger
+
 
 """тут много лишнего нужно разделять (как-нибудь в другой раз)
 upd взе резделено и тут только legacy"""
@@ -50,9 +51,3 @@ async def get_user(username: str, db: AsyncSession) -> User | None:
         roles=roles_list,  # Теперь это список
         info=db_user.info,
     )
-
-
-
-
-
-

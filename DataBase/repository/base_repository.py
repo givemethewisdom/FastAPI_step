@@ -1,15 +1,17 @@
 """модуль для однотипных запросов к разным ресурсам"""
+
 import logging
 from abc import ABC
 from datetime import datetime
-from typing import TypeVar, Generic, Sequence, Any, Optional, List
+from typing import Any, Generic, List, Optional, Sequence, TypeVar
 
-from sqlalchemy import select, delete, Result, BinaryExpression
+from sqlalchemy import BinaryExpression, Result, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from DataBase.Shemas import UserDB, TodooFinishedDB
 from app.exceptions import CustomException
+from DataBase.Shemas import TodooFinishedDB, UserDB
+
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +62,7 @@ class BaseRepository(ABC, Generic[ModelType]):
     async def delete_obj_by_id_base_repo(self, obj_id: int) -> ModelType | None:
         """стандартный метод для всех delete by id (id записи а не с join)"""
         try:
-            stmt = (delete(self.model)
-                    .where(self.model.id == obj_id)
-                    .returning(self.model))
+            stmt = delete(self.model).where(self.model.id == obj_id).returning(self.model)
 
             res = await self.session.execute(stmt)
             obj = res.scalar_one_or_none()
@@ -73,12 +73,7 @@ class BaseRepository(ABC, Generic[ModelType]):
             logger.error(e)
             await self._handler_500(e, "delete_obj_by_id")
 
-    async def get_all_base_repo(
-            self,
-            skip: int,
-            limit: int,
-            filters: Optional[List] = None
-    ) -> list[ModelType]:
+    async def get_all_base_repo(self, skip: int, limit: int, filters: Optional[List] = None) -> list[ModelType]:
         """стандартный метод для всех get all"""
         try:
             query = select(self.model)
@@ -101,9 +96,7 @@ class BaseRepository(ABC, Generic[ModelType]):
             await self._handler_500(e, "get_all")
 
     async def _handler_500(self, e: Exception, operation: str):
-        logger.error('Error in %s.%s: %s', self.model.__name__, operation, e)
+        logger.error("Error in %s.%s: %s", self.model.__name__, operation, e)
         raise CustomException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='server error',
-            message='try again later'
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="server error", message="try again later"
         )

@@ -11,16 +11,22 @@ from jwt import ExpiredSignatureError
 from rbacx import Guard, HotReloader
 from rbacx.store import FilePolicySource
 
-from DataBase.Database import Base, engine
 from app import logger
-from app.exception_handlers import custom_exception_handler, global_exception_handler, validation_exception_handler, \
-    common_exception_handler, jwt_exceptions_expired_signature_error_hendler
-from app.exceptions import CustomException, CommonException
+from app.exception_handlers import (
+    common_exception_handler,
+    custom_exception_handler,
+    global_exception_handler,
+    jwt_exceptions_expired_signature_error_hendler,
+    validation_exception_handler,
+)
+from app.exceptions import CommonException, CustomException
 from app.logger import setup_logger
-from app.routing import user, todoo, fin_todoo
+from app.routing import fin_todoo, todoo, user
 from auth.guard import guard
+from DataBase.Database import Base, engine
 
-env_path = Path(__file__).parent.parent / '.env'
+
+env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 POSTGRES_URL = os.getenv("POSTGRES_URL")
 
@@ -36,10 +42,11 @@ async def lifespan(app: FastAPI):
     """
     Async lifespan для SQLAlchemy.
     """
-    # 1. Создаем таблицы (асинхронно)
+    # 1. Создаем таблицы (асинхронно) это при старте
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
+    # 2 это при остановке
     await engine.dispose()
 
 

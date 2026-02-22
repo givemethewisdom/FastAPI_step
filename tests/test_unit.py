@@ -1,12 +1,12 @@
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from DataBase.Shemas import UserDB
 from app.models.models import UserCreate
 from app.routing.user import create_user
+from DataBase.Shemas import UserDB
 
 
 """def test_user_schema_validation():

@@ -1,8 +1,9 @@
 import logging
 from enum import Enum
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from fastapi import HTTPException
+
 
 logger = logging.getLogger(__name__)
 logger.debug("This works in every module!")
@@ -10,13 +11,14 @@ logger.debug("This works in every module!")
 
 class CustomException(HTTPException):
     def __init__(self, detail: str, status_code: int, message: str):
-        logger.debug('заглушка для кастом ексепшена из app/Exceptions')
+        logger.debug("заглушка для кастом ексепшена из app/Exceptions")
         super().__init__(status_code=status_code, detail=detail)
         self.message = message
 
 
 class ErrorCode(str, Enum):
     """Стандартные коды ошибок приложения"""
+
     # Общие ошибки
     VALIDATION_ERROR = "VALIDATION_ERROR"
     NOT_FOUND = "NOT_FOUND"
@@ -39,18 +41,16 @@ class CommonException(HTTPException):
     """
 
     def __init__(
-            self,
-            status_code: int,
-            message: str,
-            error_code: Optional[str] = None,
-            detail: Optional[str] = None,
-            headers : Optional[Dict[str, str]] = None
+        self,
+        status_code: int,
+        message: str,
+        error_code: Optional[str] = None,
+        detail: Optional[str] = None,
+        headers: Optional[Dict[str, str]] = None,
     ):
         # detail для HTTPException, message для нашей модели
         super().__init__(
-            status_code=status_code,
-            detail=detail or message,  # detail должно быть строкой
-            headers=headers
+            status_code=status_code, detail=detail or message, headers=headers  # detail должно быть строкой
         )
         self.message = message
         self.error_code = error_code or self._default_error_code(status_code)

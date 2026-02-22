@@ -5,13 +5,14 @@ from typing import Optional
 
 from starlette import status
 
-from DataBase.Shemas import TodooDB
+from app.exceptions import CustomException
+from app.models.models_todoo import Todoo, TodooComment, TodooResponse
+from app.models.models_todoo_finished import Todoofinished
 from DataBase.repository.finished_todoo_repo import FinishedTodooRepository
 from DataBase.repository.todoo_repository import TodooRepository
 from DataBase.repository.user_repository import UserRepository
-from app.exceptions import CustomException
-from app.models.models_todoo import TodooResponse, Todoo, TodooComment
-from app.models.models_todoo_finished import Todoofinished
+from DataBase.Shemas import TodooDB
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +31,11 @@ class TodooService:
 
         if not user:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='user does not exist',
-                message='make sure user exist'
+                status_code=status.HTTP_404_NOT_FOUND, detail="user does not exist", message="make sure user exist"
             )
 
         res = await self.todoo_repo.create_obj_base_repo(
-            user_id=user_id,
-            title=todoo_data.title,
-            description=todoo_data.description,
-            comment=todoo_data.comment
+            user_id=user_id, title=todoo_data.title, description=todoo_data.description, comment=todoo_data.comment
         )
 
         try:
@@ -50,11 +46,7 @@ class TodooService:
             await self.todoo_repo.session.rollback()
 
     async def get_all_todoo_serv(
-            self,
-            skip: int,
-            limit: int,
-            created_after: Optional[datetime],
-            created_before: Optional[datetime]
+        self, skip: int, limit: int, created_after: Optional[datetime], created_before: Optional[datetime]
     ):
         """get all todoo with date filter(optional)"""
 
@@ -66,11 +58,7 @@ class TodooService:
         if created_before:
             filters.append(TodooDB.created_at <= created_before)
 
-        return await self.todoo_repo.get_all_base_repo(
-            skip=skip,
-            limit=limit,
-            filters=filters
-        )
+        return await self.todoo_repo.get_all_base_repo(skip=skip, limit=limit, filters=filters)
 
     async def update_todoo_comment_serv(self, todoo_id: int, comment: TodooComment):
         """Update todoo info by id"""
@@ -79,9 +67,7 @@ class TodooService:
 
         if not todoo:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='todoo not found',
-                message='make sure todoo exist'
+                status_code=status.HTTP_404_NOT_FOUND, detail="todoo not found", message="make sure todoo exist"
             )
 
         todoo.comment = comment.comment
@@ -98,13 +84,11 @@ class TodooService:
         deleted_todo = await self.todoo_repo.delete_obj_by_id_base_repo(obj_id=todoo_id)
         if not deleted_todo:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='todoo not found',
-                message='make sure todoo exist'
+                status_code=status.HTTP_404_NOT_FOUND, detail="todoo not found", message="make sure todoo exist"
             )
         try:
             await self.todoo_repo.session.commit()
-            return {'success': 'todoo deleted'}
+            return {"success": "todoo deleted"}
         except Exception as e:
             await self.todoo_repo.session.rollback()
             logger.error(e)
@@ -116,9 +100,7 @@ class TodooService:
 
         if not cur_todoo:
             raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='todoo not found',
-                message='make sure todoo exist'
+                status_code=status.HTTP_404_NOT_FOUND, detail="todoo not found", message="make sure todoo exist"
             )
 
         finished_at = datetime.now(timezone.utc)
@@ -132,7 +114,7 @@ class TodooService:
             comment=cur_todoo.comment,
             created_at=cur_todoo.created_at,
             finished_at=finished_at,
-            all_time_cost=all_time_cost
+            all_time_cost=all_time_cost,
         )
 
         try:

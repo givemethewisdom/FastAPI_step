@@ -2,32 +2,24 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Depends, Query
 from rbacx.adapters.fastapi import require_access
 
-from app.models.models_todoo import Todoo, TodooResponse, TodooComment
+from app.models.models_todoo import Todoo, TodooComment, TodooResponse
 from app.models.models_todoo_finished import Todoofinished
-
-
 from app.services.dependencies import TodooServiceDep
 from auth.guard import guard
 from auth.security import make_env_builder
 
-router = APIRouter(
-    prefix="/todoo",
-    tags=["todoo"]
-)
+
+router = APIRouter(prefix="/todoo", tags=["todoo"])
 
 logger = logging.getLogger(__name__)
 
 
 # для отладки доступ по user
 @router.post("/{user_id}/create", response_model=TodooResponse)
-async def create_todoo(
-        user_id: int,
-        todoo_data: Todoo,
-        todoo_service: TodooServiceDep
-):
+async def create_todoo(user_id: int, todoo_data: Todoo, todoo_service: TodooServiceDep):
     """
     Создание новой задачи.
     Возвращает:
@@ -40,33 +32,20 @@ async def create_todoo(
         "user_id": 1
     }
     """
-    return await todoo_service.create_todoo_serv(
-        user_id=user_id,
-        todoo_data=todoo_data
-    )
-
+    return await todoo_service.create_todoo_serv(user_id=user_id, todoo_data=todoo_data)
 
 
 @router.get("/get_all", response_model=List[TodooResponse])
 async def get_all_todoo(
-        todoo_service: TodooServiceDep,
-        skip: int = 0,
-        limit: int = 10,
-        created_after: Optional[datetime] = Query(
-            None,
-            description="Созданные ПОСЛЕ",
-            json_schema_extra={
-                'example': '2026-01-01T00:00:00'
-            }
-
-        ),
-        created_before: Optional[datetime] = Query(
-            None,
-            description="Созданные ДО)",
-            json_schema_extra={
-                'example': '2026-01-01T00:00:00'
-            }
-        )
+    todoo_service: TodooServiceDep,
+    skip: int = 0,
+    limit: int = 10,
+    created_after: Optional[datetime] = Query(
+        None, description="Созданные ПОСЛЕ", json_schema_extra={"example": "2026-01-01T00:00:00"}
+    ),
+    created_before: Optional[datetime] = Query(
+        None, description="Созданные ДО)", json_schema_extra={"example": "2026-01-01T00:00:00"}
+    ),
 ):
     """
     Получение информации обо всех не завершенных задачах.
@@ -78,20 +57,11 @@ async def get_all_todoo(
     - Данные о задачах в формате TodooResponse
     - пустой список если нет задач
     """
-    return await todoo_service.get_all_todoo_serv(
-        skip,
-        limit,
-        created_after,
-        created_before
-    )
+    return await todoo_service.get_all_todoo_serv(skip, limit, created_after, created_before)
 
 
-@router.patch('/{todoo_id}', response_model=TodooResponse)
-async def update_todoo_comment(
-        todoo_id: int,
-        comment: TodooComment,
-        todoo_service: TodooServiceDep
-):
+@router.patch("/{todoo_id}", response_model=TodooResponse)
+async def update_todoo_comment(todoo_id: int, comment: TodooComment, todoo_service: TodooServiceDep):
     """
     обновление комментария к задаче(со стороны проверяющего к исполнителю)
     по сути может поменять любой admin для любого(admin,user)
@@ -110,10 +80,7 @@ async def update_todoo_comment(
 
 
 @router.delete("/{todoo_id}", response_model=dict)
-async def delete_todoo(
-        todoo_id: int,
-        todoo_service: TodooServiceDep
-):
+async def delete_todoo(todoo_id: int, todoo_service: TodooServiceDep):
     """
     Удаление todoo из базы данных по ID.
 
@@ -129,10 +96,7 @@ async def delete_todoo(
 
 
 @router.post("/complete_todoo/{todoo_id}", response_model=Todoofinished)
-async def complete_todoo(
-        todoo_id: int,
-        todoo_service:TodooServiceDep
-):
+async def complete_todoo(todoo_id: int, todoo_service: TodooServiceDep):
     """
     Атомарное завершение todoo с переходом в TodooFinished.
 

@@ -2,12 +2,13 @@ import logging
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
-from DataBase.Shemas import UserDB
-from DataBase.repository.base_repository import BaseRepository
-from app.models.models import UserCreate, UserReturn, UserBase, UserUpdate
+from app.models.models import UserBase, UserCreate, UserReturn, UserUpdate
 from app.services.hash_password import PasswordService
+from DataBase.repository.base_repository import BaseRepository
+from DataBase.Shemas import UserDB
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +22,9 @@ class UserRepository(BaseRepository):
         try:
 
             result = await self.session.execute(
-                select(UserDB)
-                .options(joinedload(UserDB.token))#токен только один
-                .where(UserDB.username == username)
+                select(UserDB).options(joinedload(UserDB.token)).where(UserDB.username == username)  # токен только один
             )
-            logger.info('still for only one token')
+            logger.info("still for only one token")
             user = result.scalar_one_or_none()
             return user
 
@@ -38,12 +37,7 @@ class UserRepository(BaseRepository):
         try:
 
             update_dict = new_info.model_dump(exclude_unset=True, exclude_none=True)
-            query = (
-                update(UserDB)
-                .where(UserDB.id == user_id)
-                .values(**update_dict)
-                .returning(UserDB)
-            )
+            query = update(UserDB).where(UserDB.id == user_id).values(**update_dict).returning(UserDB)
 
             result = await self.session.execute(query)
             await self.session.flush()
