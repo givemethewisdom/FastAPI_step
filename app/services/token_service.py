@@ -31,6 +31,7 @@ class TokenService:
         self.token_repo = token_repo
 
     def hash_token_service(self, token: str) -> str:
+        #нарушение DRY как-нибудь потом исправлю
         return self.pwd_context.hash(token)
 
     async def verify_token_service(self, token, token_hash: str) -> bool:
@@ -59,13 +60,20 @@ class TokenService:
             user_id: int,
             token: str,
     ):
+        del_token = await self.token_repo.del_ref_token_by_user_id_repo(user_id)
+        if not del_token:
+            raise CustomException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='user have no any tokens',
+                message='make sure user have tokens'
+            )
         token_hash = self.hash_token_service(token)
         expire_at = datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
-        return await self.token_repo.save_refresh_token(
+        return await self.token_repo.create_obj_base_repo(
             user_id=user_id,
-            token_hash=token_hash,
-            expire_at=expire_at,
+            refresh_token=token_hash,
+            expires_at=expire_at,
         )
 
     async def make_token_access_via_refresh_service(
@@ -85,7 +93,7 @@ class TokenService:
     async def get_refresh_token_from_db_service(self, user_id: int) -> RefreshTokenResponse:
         "получаем refresh token по user id"
 
-        token = await self.token_repo.get_refresh_by_user_id(user_id=user_id)
+        token = await self.token_repo.get_refresh_by_user_id_repo(user_id=user_id)
 
         if not token:
             raise HTTPException(
