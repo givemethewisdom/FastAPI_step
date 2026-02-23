@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -7,6 +8,10 @@ import pytest
 
 # !!! КРИТИЧЕСКИ ВАЖНО: устанавливаем переменные ДО ЛЮБЫХ импортов !!!
 # Устанавливаем все необходимые переменные
+mock_psycopg2 = MagicMock()
+sys.modules["psycopg2"] = mock_psycopg2
+sys.modules["psycopg2.extensions"] = MagicMock()
+sys.modules["psycopg2.extras"] = MagicMock()
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 os.environ["POSTGRES_URL"] = "postgresql+asyncpg://test:test@localhost/testdb"  # Добавить!
 os.environ["SECRET_KEY"] = "test_secret_key"
