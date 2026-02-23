@@ -1,10 +1,10 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from sqlalchemy import select
-from sqlalchemy.sql import Select
 
-from app.models.models import UserCreate
+from app.models.models import UserCreate, UserTokenResponse
+from app.services.token_service import TokenService
+from app.services.user_service import UserService
 from DataBase.repository.user_repository import UserRepository
 
 
@@ -47,43 +47,85 @@ class TestUserRepository:
         assert result is None
         mock_session.execute.assert_called_once()
 
-    @patch("DataBase.repository.user_repository.PasswordService")
-    async def test_create_new_user_success(self, mock_password_service, mock_session):
-        """Тест: успешное создание пользователя"""
-        mock_password_service.hash_password.return_value = "hashed_pass"
+    @pytest.mark.asyncio
+    async def test_create_user_with_tokens_success(mock_session):
+        """Тест успешного создания пользователя с токенами"""
+        # 1. Подготовка моков
+        mock_user_repo = AsyncMock()
+        mock_token_repo = AsyncMock()
+        mock_token_service = TokenService(mock_token_repo)
 
-        user_data = UserCreate(username="testuser", password="testpass!", info="some info")
+        mock_user_repo.get_user_with_token_by_name_repo = AsyncMock(return_value=None)
 
-        repo = UserRepository(mock_session)
-        result = await repo.create_new_user_repo(user_data, role="user")
+        mock_db_user = MagicMock()
+        mock_db_user.id = 1
+        mock_db_user.username = "testuser"
+        mock_db_user.info = "some info"
+        mock_db_user.roles = "user"
+        mock_user_repo.create_obj_base_repo = AsyncMock(return_value=mock_db_user)
+        mock_token_service.save_refresh_token_in_db_service = AsyncMock()
 
-        assert result.username == "testuser"
-        assert result.password == "hashed_pass"
-        assert result.roles == "user"
-        assert result.info == "some info"
-        mock_session.add.assert_called_once_with(result)
+        user_service = UserService(user_repo=mock_user_repo, token_service=mock_token_service)
+
+        user_data = UserCreate(username="testuser", password="TestPass123!", info="some info")
+
+        # ВАЖНО мокать все внещние зависимости!!
+        with (
+            patch("app.services.user_service.PasswordService.hash_password") as mock_hash,
+            patch("app.services.user_service.create_access_token") as mock_access,
+            patch("app.services.user_service.create_refresh_token") as mock_refresh,
+        ):
+            mock_hash.return_value = "hashed_password_123"
+            mock_access.return_value = "mock_access_token"
+            mock_refresh.return_value = "mock_refresh_token"
+
+            result = await user_service.create_user_with_tokens_service(user_data, role="user")
+
+            mock_hash.assert_called_once_with("TestPass123!")
+
+            mock_user_repo.create_obj_base_repo.assert_called_once_with(
+                username="testuser",
+                password="hashed_password_123",
+                info="some info",
+                roles="user",
+            )
+
+            mock_access.assert_called_once_with({"sub": "testuser", "uid": 1})
+            mock_refresh.assert_called_once_with({"sub": "testuser", "uid": 1})
+
+            mock_token_service.save_refresh_token_in_db_service.assert_called_once_with(
+                user_id=1, token="mock_refresh_token"
+            )
+
+            mock_user_repo.session.commit.assert_called_once()
+
+            assert result.id == 1
+            assert result.username == "testuser"
+            assert result.info == "some info"
+            assert result.roles == "user"
+            assert result.access_token == "mock_access_token"
+            assert result.refresh_token == "mock_refresh_token"
 
     async def test_create_new_user_with_special_chars(self, mock_session):
         """Тест: создание пользователя со спецсимволами"""
-        user_data = UserCreate(username="user@#123", password="pass123", info="special info")
 
         repo = UserRepository(mock_session)
-        result = await repo.create_new_user_repo(user_data, role="admin")
+        result = await repo.create_obj_base_repo(username="@ad12", password="Zx!/*", info="None", roles="user")
 
-        assert result.username == "user@#123"
-        assert result.roles == "admin"
-        assert result.info == "special info"
+        assert result.username == "@ad12"
+        assert result.roles == "user"
+        assert result.info == "None"
 
     async def test_create_new_user_empty_info(self, mock_session):
         """Тест: создание пользователя без info"""
-        user_data = UserCreate(
-            username="testuser",
-            password="pass123",
-            # info не указано
-        )
 
         repo = UserRepository(mock_session)
-        result = await repo.create_new_user_repo(user_data, role="user")
+        result = await repo.create_obj_base_repo(
+            username="@ad12",
+            password="Zx!/*",
+            # info="None",
+            roles="user",
+        )
 
-        assert result.username == "testuser"
+        assert result.username == "@ad12"
         assert result.info is None

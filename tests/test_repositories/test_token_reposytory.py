@@ -18,11 +18,11 @@ class TestTokenRepository:
         expires_at = datetime.now() + timedelta(minutes=10_000)
 
         repo = TokenRepository(mock_session)
-        result = await repo.save_refresh_token(user_id=1, token_hash="hashed_token", expire_at=expires_at)
+        result = await repo.create_obj_base_repo(user_id=1, refresh_token="hashed_token", expires_at=expires_at)
 
         # Проверка поведения
-        mock_session.execute.assert_called_once()
         mock_session.add.assert_called_once()
+        mock_session.flush.assert_called_once()
         await mock_session.flush()
 
         # Проверка переданных значений
