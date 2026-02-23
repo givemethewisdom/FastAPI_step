@@ -6,18 +6,20 @@ import pytest
 
 
 # !!! КРИТИЧЕСКИ ВАЖНО: устанавливаем переменные ДО ЛЮБЫХ импортов !!!
+# Устанавливаем все необходимые переменные
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+os.environ["POSTGRES_URL"] = "postgresql+asyncpg://test:test@localhost/testdb"  # Добавить!
 os.environ["SECRET_KEY"] = "test_secret_key"
 os.environ["REFRESH_SECRET"] = "test_refresh_secret"
 os.environ["TESTING"] = "true"
 
-# Мокаем create_async_engine ПЕРЕД импортом любых модулей приложения
+# Мокаем create_async_engine
 mock_engine = MagicMock()
 mock_engine.connect = AsyncMock()
 mock_engine.begin = AsyncMock()
 
 with patch("sqlalchemy.ext.asyncio.create_async_engine", return_value=mock_engine):
-    # Теперь импортируем приложение
+    # Импортируем приложение
     from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 
     from app.models.models import UserCreate, UserTokenResponse  # noqa: E402
