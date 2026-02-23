@@ -5,9 +5,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
-os.environ.setdefault("SECRET_KEY", "test_secret_key")
-os.environ.setdefault("REFRESH_SECRET", "test_refresh_secret")
+# !!! КРИТИЧЕСКИ ВАЖНО: устанавливаем переменные ДО ЛЮБЫХ импортов !!!
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
+os.environ["SECRET_KEY"] = "test_secret_key"
+os.environ["REFRESH_SECRET"] = "test_refresh_secret"
+os.environ["TESTING"] = "true"
 
 # Теперь импортируем приложение - игнорируем E402 для следующих строк
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
