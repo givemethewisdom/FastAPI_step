@@ -1,6 +1,6 @@
 import logging
 import os
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -11,13 +11,19 @@ os.environ["SECRET_KEY"] = "test_secret_key"
 os.environ["REFRESH_SECRET"] = "test_refresh_secret"
 os.environ["TESTING"] = "true"
 
-# Теперь импортируем приложение - игнорируем E402 для следующих строк
-from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+# Мокаем create_async_engine ПЕРЕД импортом любых модулей приложения
+mock_engine = MagicMock()
+mock_engine.connect = AsyncMock()
+mock_engine.begin = AsyncMock()
 
-from app.models.models import UserCreate, UserTokenResponse  # noqa: E402
-from app.services.token_service import TokenService  # noqa: E402
-from DataBase.repository.token_repository import TokenRepository  # noqa: E402
-from DataBase.repository.user_repository import UserRepository  # noqa: E402
+with patch("sqlalchemy.ext.asyncio.create_async_engine", return_value=mock_engine):
+    # Теперь импортируем приложение
+    from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+
+    from app.models.models import UserCreate, UserTokenResponse  # noqa: E402
+    from app.services.token_service import TokenService  # noqa: E402
+    from DataBase.repository.token_repository import TokenRepository  # noqa: E402
+    from DataBase.repository.user_repository import UserRepository  # noqa: E402
 
 
 # Тестовая БД в памяти
