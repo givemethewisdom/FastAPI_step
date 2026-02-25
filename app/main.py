@@ -29,6 +29,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 database = Database(POSTGRES_URL)
 
+# дублирование логов из-за этого. отключать базу fastapi не хочу
 setup_logger()
 
 

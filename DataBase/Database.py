@@ -8,11 +8,11 @@ from sqlalchemy.orm import declarative_base
 load_dotenv()
 
 # Async PostgreSQL URL (ВАЖНО: postgresql+asyncpg://)
-POSTGRES_URL = os.getenv("POSTGRES_URL")
+# DATABASE_URL = os.getenv("POSTGRES_URL")
 
 # Async engine
 engine = create_async_engine(
-    POSTGRES_URL,
+    os.getenv("DATABASE_URL"),
     echo=True,  # SQL логи (False в production)
     pool_size=5,
     max_overflow=10,

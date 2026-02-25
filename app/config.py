@@ -1,9 +1,11 @@
+# app/config.py
 import logging
 from dataclasses import dataclass
 
 from environs import Env
 
 
+# Просто получаем логгер, он будет использовать корневой логгер
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +21,6 @@ class Config:
     debug: bool
 
 
-# Создаем глобальный экземпляр конфига
 _config: Config = None
 
 
@@ -27,7 +28,7 @@ def load_config(path: str = None) -> Config:
     global _config
     if _config is None:
         env = Env()
-        logger.info("Loading config from environment")
+        logger.info("Loading config from environment")  # Будет использовать корневой логгер
         env.read_env(path)
 
         _config = Config(
@@ -38,7 +39,6 @@ def load_config(path: str = None) -> Config:
     return _config
 
 
-# Функция для получения конфига
 def get_config() -> Config:
     if _config is None:
         raise RuntimeError("Config not loaded. Call load_config() first.")

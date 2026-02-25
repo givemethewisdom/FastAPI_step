@@ -12,7 +12,7 @@ from DataBase.Shemas import UserDB
 
 
 # Синхронный URL (заменяем asyncpg на psycopg2)
-POSTGRES_URL_SYNC = os.getenv("POSTGRES_URL").replace("+asyncpg", "+psycopg2")
+POSTGRES_URL_SYNC = os.getenv("POSTGRES_URL_SYNC")
 
 sync_engine = create_engine(POSTGRES_URL_SYNC, echo=True)
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)

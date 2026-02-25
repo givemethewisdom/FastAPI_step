@@ -86,7 +86,7 @@ async def get_user_by_id(user_id: int, user_service: UserServiceDep):
 
 
 @router.post(
-    "{user_id}",
+    "/{user_id}",
     dependencies=[Depends(require_access(guard, make_env_builder("admin_only", "page")))],
     response_model=UserReturn,
 )

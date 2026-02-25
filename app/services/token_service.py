@@ -64,13 +64,7 @@ class TokenService:
         token: str,
     ):
         """сохранить тоекен в БД (без комита)"""
-        del_token = await self.token_repo.del_ref_token_by_user_id_repo(user_id)
-        if not del_token:
-            raise CustomException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="user have no any tokens",
-                message="make sure user have tokens",
-            )
+        await self.token_repo.del_ref_token_by_user_id_repo(user_id)
         token_hash = self.hash_token_service(token)
         expire_at = datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
 
