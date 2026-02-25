@@ -1,0 +1,3 @@
+STILL IN PROGRESS
+SOME MODULES SHOULD NOT BE HERE(ESPECIALLY DB), BUT ITS HERE FOR NOW XD
+[![CI Pipeline](https://github.com/givemethewisdom/FastAPI_step/actions/workflows/tests.yml/badge.svg)](https://github.com/givemethewisdom/FastAPI_step/actions/workflows/tests.yml)
