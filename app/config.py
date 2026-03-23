@@ -1,4 +1,3 @@
-# app/config.py
 import logging
 from dataclasses import dataclass
 
@@ -15,8 +14,18 @@ class DatabaseConfig:
 
 
 @dataclass
+class RabbitConfig:
+    user: str
+    password: str
+    host: str
+    port: int
+    queue: str
+
+
+@dataclass
 class Config:
     db: DatabaseConfig
+    rabbit: RabbitConfig
     secret_key: str
     debug: bool
 
@@ -34,6 +43,13 @@ def load_config(path: str = None) -> Config:
         _config = Config(
             db=DatabaseConfig(database_url=env("DATABASE_URL")),
             secret_key=env("SECRET_KEY"),
+            rabbit=RabbitConfig(
+                user=env("RABBIT_USER", "guest"),
+                password=env("RABBIT_PASS", "guest"),
+                host=env("RABBIT_HOST", "localhost"),
+                port=env.int("RABBIT_PORT", 5672),
+                queue=env("RABBIT_PRICE_QUEUE", "task_price"),
+            ),
             debug=env.bool("DEBUG", default=False),
         )
     return _config
