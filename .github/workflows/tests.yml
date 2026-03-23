@@ -6,7 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # Добавляем сервисы PostgreSQL и Redis
     services:
       postgres:
         image: postgres:15-alpine
