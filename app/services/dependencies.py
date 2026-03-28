@@ -3,7 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.cashe.rabbit_ticker_cash import RedisCache
 from app.services.fin_todoo_service import FinTodooService
+from app.services.price_service import PriceService
 from app.services.todoo_service import TodooService
 from app.services.token_service import TokenService
 from app.services.user_service import UserService
@@ -13,6 +15,15 @@ from DataBase.repository.finished_todoo_repo import FinishedTodooRepository
 from DataBase.repository.todoo_repository import TodooRepository
 from DataBase.repository.token_repository import TokenRepository
 from DataBase.repository.user_repository import UserRepository
+
+
+# cash -------------------------
+async def get_cache() -> RedisCache:
+    """просто экземпляр редис кеш"""
+    return RedisCache()
+
+
+CashRedisDep = Annotated[RedisCache, Depends(get_cache)]
 
 
 # репозитории--------------------------------------------
@@ -85,6 +96,13 @@ async def get_user_service(
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+
+
+async def get_price_service(cache: CashRedisDep) -> PriceService:
+    return PriceService(cache=cache)
+
+
+PriceServiceDep = Annotated[PriceService, Depends(get_price_service)]
 
 
 # dependencies с другим контекстом использования----------

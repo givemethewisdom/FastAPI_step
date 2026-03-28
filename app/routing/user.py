@@ -37,6 +37,7 @@ async def create_user(user: UserCreate, user_service: UserServiceDep):
 @router.post("/fast_create_admin", response_model=UserTokenResponse)
 async def fast_create_admin(user: UserCreate, user_service: UserServiceDep) -> UserTokenResponse:
     # нужно что-то делать если все сломалось после commit но до return(midlwear, bg_task)
+    # UPD уже знаю что делать но чета лень...
     return await user_service.create_user_with_tokens_service(user=user, role="admin")
 
 
