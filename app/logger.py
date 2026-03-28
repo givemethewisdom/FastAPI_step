@@ -2,9 +2,7 @@ import logging
 
 
 def setup_logger():
-    """Настраиваем КОРНЕВОЙ логгер - работает для ВСЕХ модулей"""
-
-    # Настраиваем корневой логгер
+    """Настраиваем корневой логгер"""
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
 
@@ -19,5 +17,10 @@ def setup_logger():
     ch.setFormatter(formatter)
 
     root_logger.addHandler(ch)
+
+    # Устанавливаем уровень WARNING для pika, чтобы убрать DEBUG логи
+    logging.getLogger("pika").setLevel(logging.WARNING)
+    # Также можно для других библиотек
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     return root_logger

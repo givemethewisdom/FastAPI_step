@@ -17,7 +17,7 @@ from app.exception_handlers import (
 )
 from app.exceptions import CommonException, CustomException
 from app.logger import setup_logger
-from app.routing import fin_todoo, todoo, user
+from app.routing import fin_todoo, price, todoo, user
 from DataBase.Database import Base, engine
 
 
@@ -63,3 +63,4 @@ app.add_exception_handler(ExpiredSignatureError, jwt_exceptions_expired_signatur
 app.include_router(user.router)
 app.include_router(todoo.router)
 app.include_router(fin_todoo.router)
+app.include_router(price.router)
